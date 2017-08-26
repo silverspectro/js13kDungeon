@@ -21,6 +21,10 @@
         return document.getElementById(id);
     }
 
+    /**
+     * Wipes all element from a given DOMElement
+     * @param {DOMElement} element 
+     */
     function wipeElementsFrom(element) {
         while(element.children.length) {
             element.removeChild(element.children[element.children.length-1]);
@@ -67,7 +71,6 @@
                             + "players: " + game.dungeons.length;
             on(li, 'click', selectGame);
             gamesUl.appendChild(li);
-            console.log(game.dungeons.length);
         });
     }
 
@@ -82,29 +85,29 @@
     function bind() {
 
         socket.on("room-list", function (rooms) {
-            console.log(rooms);
             updateGamesList(rooms);
             toggle(gamesList);
             toggle(startMenu);
         });
 
         socket.on("game-created", function (newGame) {
-            game = new Game(socket);
+            game = new Game(socket, false);
             game.updateGame(newGame);
             toggle(startMenu);
         });
 
         socket.on("update", function(updatedGame) {
-            if (!game) game = new Game({ id: updatedGame.id });
+            if (!game) game = new Game(socket, false);
             game.updateGame(updatedGame);
             toggle(startMenu, true);
             toggle(gamesList, true);
-            console.log(updatedGame);
         });
 
         socket.on("error", function () {});
 
         var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
+
+        // add events to button based on id
 
         buttons.forEach(function (button) {
             on(button, 'click', function () {
@@ -116,7 +119,25 @@
                         socket.emit(button.id, socket.id);
                 }
             });
-        })
+        });
+
+        // add keyboard events
+        window.addEventListener('keyup', function (event) {
+            var key = event.keyCode;
+            var direction;
+            if (game) {
+                if (key === 87 || key === 38) {
+                    direction = 'up';
+                } else if (key === 40 || key === 83) {
+                    direction = 'down';
+                } else if (key === 65 || key === 37) {
+                    direction = 'left';
+                } else if (key === 68 || key === 39) {
+                    direction = 'right';
+                }
+                socket.emit('move-player', direction);
+            }
+        });
     }
 
     /**

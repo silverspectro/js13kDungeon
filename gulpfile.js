@@ -3,6 +3,7 @@ const uglify = require('gulp-uglify');
 const htmlmin = require('gulp-htmlmin');
 const cssmin = require('gulp-cssmin');
 const concat = require('gulp-concat');
+const nodemon = require('gulp-nodemon');
 const zip = require('gulp-zip');
 const fs = require('fs');
 const chalk = require('chalk');
@@ -14,6 +15,14 @@ const success = chalk.green;
 const regular = chalk.white;
 
 const destination = './public';
+
+gulp.task('dev', function () {
+  nodemon({
+		script: 'index.js', 
+		watch: 'public',
+		env: { 'NODE_ENV': 'development' },
+  });
+});
 
 gulp.task('build-js', (done) => {
 	return gulp.src(['./src/public/server.js', './src/public/client.js', './src/public/shared.js'])

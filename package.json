@@ -8,7 +8,7 @@
     "start": "gulp build && node index.js",
     "build": "gulp build",
     "watch:build": "gulp watch",
-    "watch:server": "supervisor start index.js"
+    "watch:server": "gulp dev"
   },
   "keywords": [
     "js13kgames",
@@ -20,8 +20,8 @@
   "dependencies": {
     "express": "4.15.*",
     "glitchd-client-node": "*",
-    "socket.io": "2.0.*",
-    "supervisor": "^0.12.0"
+    "gulp-nodemon": "^2.2.1",
+    "socket.io": "2.0.*"
   },
   "devDependencies": {
     "chalk": "^1.1.3",
