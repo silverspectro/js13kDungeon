@@ -21,6 +21,10 @@
         return document.getElementById(id);
     }
 
+    /**
+     * Wipes all element from a given DOMElement
+     * @param {DOMElement} element 
+     */
     function wipeElementsFrom(element) {
         while(element.children.length) {
             element.removeChild(element.children[element.children.length-1]);
@@ -43,6 +47,8 @@
 
     var gamesList = getElementById('games-menu'),
         gamesUl = getElementById('games-list'),
+        optionList = getElementById('option-list'),
+        optionListUl = optionList.getElementsByTagName('ul')[0],
         selectedGameId;
 
     function updateGameListUI() {
@@ -55,7 +61,7 @@
 
     function selectGame(event) {
         selectedGameId = event.target.getAttribute('data-game-id');
-        updateGameListUI();    
+        updateGameListUI();
     }
 
     function updateGamesList(games) {
@@ -67,14 +73,53 @@
                             + "players: " + game.dungeons.length;
             on(li, 'click', selectGame);
             gamesUl.appendChild(li);
-            console.log(game.dungeons.length);
         });
+    }
+
+    
+    function updateGameOptionsSelected() {
+        var optionButtons = Array.prototype.slice.apply(optionListUl.getElementsByTagName('button'));
+
+        optionButtons.forEach(function (button) {
+            var dataIndex = button.getAttribute('data-option-index');
+            if (parseInt(dataIndex, 10) === parseInt(selectedOption, 10)) button.classList.add('selected');
+            else button.classList.remove('selected');
+        });
+
+        game.selectedOption = game.options[selectedOption];
+    }
+
+    function selectOption(event) {
+        var optionIndex = event.target.getAttribute('data-option-index');
+        selectedOption = optionIndex;
+        updateGameOptionsSelected();
+    }
+
+    function updateGameOptions(options) {
+        wipeElementsFrom(optionListUl);
+        options.forEach(function (option, index) {
+            var li = createUIElement('li');
+            var button = createUIElement('button', {
+                'data-option-index': index,
+            }, {
+                click: selectOption,
+            });
+            button.innerHTML = option;
+            
+            li.appendChild(button);
+            optionListUl.appendChild(li);
+        });
+        if (typeof selectedOption === 'undefined') {
+            selectedOption = 0;
+        }
+        updateGameOptionsSelected();
     }
 
 
 
     var socket, //Socket.IO client
-        game;
+        game,
+        selectedOption = 0;
 
     /**
      * Binde Socket.IO and button events
@@ -82,29 +127,33 @@
     function bind() {
 
         socket.on("room-list", function (rooms) {
-            console.log(rooms);
             updateGamesList(rooms);
             toggle(gamesList);
             toggle(startMenu);
         });
 
         socket.on("game-created", function (newGame) {
-            game = new Game(socket);
+            game = new Game(socket, false);
             game.updateGame(newGame);
+            updateGameOptions(game.options);
             toggle(startMenu);
+            optionList.classList.remove('off');
         });
 
         socket.on("update", function(updatedGame) {
-            if (!game) game = new Game({ id: updatedGame.id });
+            if (!game) game = new Game(socket, false);
             game.updateGame(updatedGame);
             toggle(startMenu, true);
             toggle(gamesList, true);
-            console.log(updatedGame);
+            if (game.options.length) updateGameOptions(game.options);
+            optionList.classList.remove('off');
         });
 
         socket.on("error", function () {});
 
         var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
+
+        // add events to button based on id
 
         buttons.forEach(function (button) {
             on(button, 'click', function () {
@@ -116,7 +165,25 @@
                         socket.emit(button.id, socket.id);
                 }
             });
-        })
+        });
+
+        // add keyboard events
+        window.addEventListener('keyup', function (event) {
+            var key = event.keyCode;
+            var direction;
+            if (game) {
+                if (key === 87 || key === 38) {
+                    direction = 'up';
+                } else if (key === 40 || key === 83) {
+                    direction = 'down';
+                } else if (key === 65 || key === 37) {
+                    direction = 'left';
+                } else if (key === 68 || key === 39) {
+                    direction = 'right';
+                }
+                if (direction) socket.emit('move-player', direction);
+            }
+        });
     }
 
     /**

@@ -10,16 +10,22 @@
 <body>
 
     <main>
-        <div id="start-menu" class="on">
-            <button id="new-game">New Game</button>
-            <button id="list-games">Join</button>
-        </div>
-
-        <div id="games-menu" class="on off">
-            <ul id="games-list"></ul>
-            <button id="join-game">Join</button>
-        </div>
+        <nav id="option-list" class="on off">
+            <ul></ul>
+        </nav>
     </main>
+
+    <div id="start-menu" class="on">
+        <button id="new-game">New Game</button>
+        <button id="list-games">Join</button>
+    </div>
+
+    <div id="games-menu" class="on off">
+        <ul id="games-list"></ul>
+        <button id="join-game">Join</button>
+    </div>
+
+    <div id="overlay"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/shared.js"></script>
