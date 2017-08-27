@@ -157,6 +157,7 @@
 			var dungeon = find(this.dungeons, dungeonId);
 			this.broadcast('apply-option', {
 				dungeonId: dungeonId,
+				opponentId: this.id,
 				option: ' ' + this.selectedOption.toLowerCase(),
 				x: x,
 				y: y,
@@ -243,7 +244,9 @@
 
 				// update life count
 				dungeonUI.lifeCount.innerHTML = dungeon.life;
-				dungeonUI.lifeCount.innerHTML = dungeon.life;
+				
+				// update money count
+				dungeonUI.moneyCount.innerHTML = dungeon.money;
 
 				// update area state
 				dungeon.area.forEach(function (row, rowIndex) {
