@@ -25,10 +25,34 @@ html, body, body * {
 
 *.on {
   display: initial;
+  animation-direction: normal;
+  animation-play-state: running;
+  animation-name: appear;
+  animation-fill-mode: both;
+  animation-duration: 0.2s;
+  animation-timing-function: ease-in-out;
 }
 
 *.on.off {
   display: none!important;
+}
+
+@keyframes appear {
+  0% {
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  5% {
+    transform: translate(-50%, -50%) scale(1, 0);
+  }
+  95% {
+    transform: translate(-50%, -50%) scale(1, 1.06);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1, 1);
+  }
 }
 
 button:focus {
@@ -74,13 +98,15 @@ main {
 }
 
 nav {
-  position: absolute;
+  display: none;
+  position: fixed;
   z-index: 3;
+  left: 50%;
+  top: 50%;
   background-color: rgb(251, 251, 251);
   box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
   padding: 2em 1.5em;
-  left: 420px;
-  top: 40px;
+  transform: translate(-50%, -50%);
 }
 
 nav ul li {

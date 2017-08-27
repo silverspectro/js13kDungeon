@@ -35,9 +35,7 @@
         startMenu = getElementById('start-menu');
 
     function toggle(element, force) {
-        if (!elementsOn[element.id]) {
-            elementsOn[element.id] = element.className.includes('off');
-        }
+        elementsOn[element.id] = element.className.includes('off');
         if (elementsOn[element.id] && !force) {
             element.classList.remove('off');
         } else {
@@ -119,7 +117,9 @@
 
     var socket, //Socket.IO client
         game,
-        selectedOption = 0;
+        selectedOption = 0,
+        mouseX = 0,
+        mouseY = 0;
 
     /**
      * Binde Socket.IO and button events
@@ -165,6 +165,23 @@
                         socket.emit(button.id, socket.id);
                 }
             });
+        });
+
+        window.addEventListener('mousemove', function(event) {
+            mouseX = event.screenX;
+            mouseY = event.screenY;
+        });
+
+        window.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggle(optionList);
+            if (elementsOn[optionList.id]) {
+                var x = mouseX;
+                var y = mouseY;
+                optionList.style.left = x + 'px';
+                optionList.style.top = y + 'px';
+            }
         });
 
         // add keyboard events
