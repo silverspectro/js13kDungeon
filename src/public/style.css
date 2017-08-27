@@ -31,6 +31,11 @@ html, body, body * {
   display: none!important;
 }
 
+button:focus {
+  border: none;
+  outline: none;
+}
+
 button {
   height: 50px;
   padding: 1em 2.5em;
@@ -43,12 +48,18 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button.selected {
+  background-color: rgb(235, 235, 235);
+  color: rgb(210, 102, 98);
+  box-shadow:inset 3px 3px 2px 1px rgba(0,0,0,0.2);
+}
+
+button:not(.selected):hover {
   background-color: rgb(217, 105, 102);
 }
 
 main {
-  position: absolute;
+  position: relative;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -57,11 +68,23 @@ main {
   height: auto;
   overflow-x: hidden;
   overflow-y: visible;
-  left: 50%;
-  top: 0;
-  transform: translate(-50%, 0);
   z-index: 2;
   padding: 2em;
+  margin: 0 auto;
+}
+
+nav {
+  position: absolute;
+  z-index: 3;
+  background-color: rgb(251, 251, 251);
+  box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
+  padding: 2em 1.5em;
+  left: 420px;
+  top: 40px;
+}
+
+nav ul li {
+  margin-top: 0.3em;
 }
 
 #start-menu {
@@ -122,22 +145,22 @@ main {
   margin: 1em;
 }
 
-.area-container:nth-child(2n+1) .area {
+.area-container:nth-child(2n+2) .area {
   left: 60px;
   right: initial;
 }
 
 
-.area-container:nth-child(2n+1) .life-container {
+.area-container:nth-child(2n+2) .life-container {
   left: 0px;
   right: initial;
 }
 
-.area-container:nth-child(2n+1) .life-container .life-count {
+.area-container:nth-child(2n+2) .life-container .life-count {
   right: 0;
   text-align: right;
 }
-.area-container:nth-child(2n+1) .life-container .life-bar {
+.area-container:nth-child(2n+2) .life-container .life-bar {
   left: 0;
 }
 
@@ -179,6 +202,7 @@ main {
 }
 
 .square {
+  position: relative;
   border-right: 1px solid #000;
   border-bottom: 1px solid #000;
   flex-grow: 4;
@@ -186,5 +210,14 @@ main {
 
 .square.player {
   background-color: black;
+}
+
+.square.wall::before {
+  position: absolute;
+  content: 'X';
+  width: 100%;
+  height: 100%;
+  top: -3px;
+  left: 0;
 }
 

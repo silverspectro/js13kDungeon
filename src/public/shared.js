@@ -81,12 +81,16 @@
 	 * Game Class
 	 * @param {socket} socket
 	 */
-	function Game(socket, isServer) {
+	function Game(socket, isServer, options) {
 		this.isServer = !!isServer;
 		this.room = socket;
 		this.id = this.room.id;
 		this.dungeons = [];
 		this.dungeonsUI = [];
+		this.options = options || [
+			'Wall',
+			'Trap',
+		];
 	}
 
 	Game.prototype = {
@@ -105,6 +109,7 @@
       }
     },
 		updateGame: function(game) {
+			this.options = game.options;
       this.updateDungeons(game.dungeons);
     },
     updateDungeons: function(dungeons) {
@@ -144,6 +149,19 @@
 			var dungeonUI = document.getElementById(dungeonId);
 			document.getElementsByTagName('main')[0].removeChild(dungeonUI);
 		},
+		applyOptionEvent: function(event) {
+			var selectedSquare = event.target;
+			var dungeonId = selectedSquare.getAttribute('data-dungeon-id');
+			var x = parseInt(selectedSquare.getAttribute('data-area-x'), 10);
+			var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
+			var dungeon = find(this.dungeons, dungeonId);
+			this.broadcast('apply-option', {
+				dungeonId: dungeonId,
+				option: ' ' + this.selectedOption.toLowerCase(),
+				x: x,
+				y: y,
+			});
+		},
 		addDungeonUI: function(dungeon) {
 			var self = this;
 			var uiDungeon = {
@@ -180,11 +198,16 @@
 			// and associate it to the new uiDungeon
 			// for update loop and performance
 
-			dungeon.area.forEach(function (row) {
+			dungeon.area.forEach(function (row, rowIndex) {
 				var areaRow = [];
-				row.forEach(function (squareState) {
+				row.forEach(function (squareState, columnIndex) {
 					var square = createUIElement('div', {
 						class: squareState,
+						'data-area-x': rowIndex,
+						'data-area-y': columnIndex,
+						'data-dungeon-id': dungeon.id,
+					}, {
+						click: self.applyOptionEvent.bind(self),
 					});
 					area.appendChild(square);
 					areaRow.push(square);
@@ -242,7 +265,8 @@
         id: this.id,
         dungeons: this.dungeons.map(function(dungeon) {
           return dungeon.toJSON ? dungeon.toJSON() : dungeon;
-        })
+				}),
+				options: this.options,
       }
     }
 	}

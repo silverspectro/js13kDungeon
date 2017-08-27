@@ -47,6 +47,8 @@
 
     var gamesList = getElementById('games-menu'),
         gamesUl = getElementById('games-list'),
+        optionList = getElementById('option-list'),
+        optionListUl = optionList.getElementsByTagName('ul')[0],
         selectedGameId;
 
     function updateGameListUI() {
@@ -59,7 +61,7 @@
 
     function selectGame(event) {
         selectedGameId = event.target.getAttribute('data-game-id');
-        updateGameListUI();    
+        updateGameListUI();
     }
 
     function updateGamesList(games) {
@@ -74,10 +76,50 @@
         });
     }
 
+    
+    function updateGameOptionsSelected() {
+        var optionButtons = Array.prototype.slice.apply(optionListUl.getElementsByTagName('button'));
+
+        optionButtons.forEach(function (button) {
+            var dataIndex = button.getAttribute('data-option-index');
+            if (parseInt(dataIndex, 10) === parseInt(selectedOption, 10)) button.classList.add('selected');
+            else button.classList.remove('selected');
+        });
+
+        game.selectedOption = game.options[selectedOption];
+    }
+
+    function selectOption(event) {
+        var optionIndex = event.target.getAttribute('data-option-index');
+        selectedOption = optionIndex;
+        updateGameOptionsSelected();
+    }
+
+    function updateGameOptions(options) {
+        wipeElementsFrom(optionListUl);
+        options.forEach(function (option, index) {
+            var li = createUIElement('li');
+            var button = createUIElement('button', {
+                'data-option-index': index,
+            }, {
+                click: selectOption,
+            });
+            button.innerHTML = option;
+            
+            li.appendChild(button);
+            optionListUl.appendChild(li);
+        });
+        if (typeof selectedOption === 'undefined') {
+            selectedOption = 0;
+        }
+        updateGameOptionsSelected();
+    }
+
 
 
     var socket, //Socket.IO client
-        game;
+        game,
+        selectedOption = 0;
 
     /**
      * Binde Socket.IO and button events
@@ -93,7 +135,9 @@
         socket.on("game-created", function (newGame) {
             game = new Game(socket, false);
             game.updateGame(newGame);
+            updateGameOptions(game.options);
             toggle(startMenu);
+            optionList.classList.remove('off');
         });
 
         socket.on("update", function(updatedGame) {
@@ -101,6 +145,8 @@
             game.updateGame(updatedGame);
             toggle(startMenu, true);
             toggle(gamesList, true);
+            if (game.options.length) updateGameOptions(game.options);
+            optionList.classList.remove('off');
         });
 
         socket.on("error", function () {});
@@ -135,7 +181,7 @@
                 } else if (key === 68 || key === 39) {
                     direction = 'right';
                 }
-                socket.emit('move-player', direction);
+                if (direction) socket.emit('move-player', direction);
             }
         });
     }

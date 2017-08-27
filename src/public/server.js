@@ -88,6 +88,18 @@
 				game.broadcast('update', game.toJSON());
 			});
 
+			this.socket.on('apply-option', function (data) {
+				var game = findByDungeonId(data.dungeonId);
+				var dungeon = find(game.dungeons, data.dungeonId);
+				if (dungeon.id !== self.id) dungeon.applyOption(data.x, data.y, data.option);
+				game.broadcast('update', game.toJSON());
+			});
+
+		},
+		applyOption: function(x, y, optionName) {
+			if (this.area[x][y].state === 'square') {
+				this.area[x][y].state += optionName;
+			}
 		},
 		movePlayer: function(direction) {
 			var movementValue = 0;
@@ -96,34 +108,45 @@
 			switch(direction) {
 				case 'up': {
 					movementValue -= squareY - 1 >= 0 ? 1 : 0;
-					this.area[squareY + movementValue][squareX].state = 'square player';
-					this.area[squareY][squareX].state = 'square';
-					this.player.y += movementValue;
+					if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
+						this.area[squareY + movementValue][squareX].state = 'square player';
+						this.area[squareY][squareX].state = 'square';
+						this.player.y += movementValue;
+						this.life--;
+					}
 					break;
 				}
 				case 'down': {
 					movementValue += squareY + 1 <= this.area.length - 1 ? 1 : 0;
-					this.area[squareY + movementValue][squareX].state = 'square player';
-					this.area[squareY][squareX].state = 'square';
-					this.player.y += movementValue;
+					if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {						
+						this.area[squareY + movementValue][squareX].state = 'square player';
+						this.area[squareY][squareX].state = 'square';
+						this.player.y += movementValue;
+						this.life--;
+					}
 					break;
 				}
 				case 'left': {
 					movementValue -= squareX - 1 >= 0 ? 1 : 0;
-					this.area[squareY][squareX + movementValue].state = 'square player';
-					this.area[squareY][squareX].state = 'square';
-					this.player.x += movementValue;
+					if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
+						this.area[squareY][squareX + movementValue].state = 'square player';
+						this.area[squareY][squareX].state = 'square';
+						this.player.x += movementValue;
+						this.life--;
+					}
 					break;
 				}
 				case 'right': {
 					movementValue += squareX + 1 >= 0 ? 1 : 0;
-					this.area[squareY][squareX + movementValue].state = 'square player';
-					this.area[squareY][squareX].state = 'square';
-					this.player.x += movementValue;
+					if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
+						this.area[squareY][squareX + movementValue].state = 'square player';
+						this.area[squareY][squareX].state = 'square';
+						this.player.x += movementValue;
+						this.life--;
+					}
 					break;
 				}
 			}
-			this.life--;
 		},
 		toJSON: function() {
 			return {
