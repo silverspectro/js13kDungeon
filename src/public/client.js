@@ -35,9 +35,7 @@
         startMenu = getElementById('start-menu');
 
     function toggle(element, force) {
-        if (!elementsOn[element.id]) {
-            elementsOn[element.id] = element.className.includes('off');
-        }
+        elementsOn[element.id] = element.className.includes('off');
         if (elementsOn[element.id] && !force) {
             element.classList.remove('off');
         } else {
@@ -119,7 +117,9 @@
 
     var socket, //Socket.IO client
         game,
-        selectedOption = 0;
+        selectedOption = 0,
+        mouseX = 0,
+        mouseY = 0;
 
     /**
      * Binde Socket.IO and button events
@@ -143,13 +143,18 @@
         socket.on("update", function(updatedGame) {
             if (!game) game = new Game(socket, false);
             game.updateGame(updatedGame);
+            var dungeon = find(game.dungeons, socket.id);
             toggle(startMenu, true);
             toggle(gamesList, true);
             if (game.options.length) updateGameOptions(game.options);
-            optionList.classList.remove('off');
         });
 
         socket.on("error", function () {});
+
+        socket.on('game-lost', function (data) {
+          alert(data.message);
+          socket.disconnect(false);
+        });
 
         var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
 
@@ -165,6 +170,23 @@
                         socket.emit(button.id, socket.id);
                 }
             });
+        });
+
+        window.addEventListener('mousemove', function(event) {
+            mouseX = event.screenX;
+            mouseY = event.screenY;
+        });
+
+        window.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggle(optionList);
+            if (elementsOn[optionList.id]) {
+                var x = mouseX;
+                var y = mouseY;
+                optionList.style.left = x + 'px';
+                optionList.style.top = y + 'px';
+            }
         });
 
         // add keyboard events
