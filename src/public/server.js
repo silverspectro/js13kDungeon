@@ -46,11 +46,17 @@
 		this.life = 100;
 		this.money = 100;
 		config = config || {};
+		this.lastUpdateTime = 0;
 		this.config = {
 			trapFeedback: config.trapFeedback || 3,
 			trapCost: config.trapCost || 15,
 			wallCost: config.wallCost || 5,
-		};
+			timeLimit: 10,
+			timeLimitMalus: 1,
+    };
+    this.modifiers = {
+      timeLimitMalus: 0,
+    };
 		this.init();
 	}
 
@@ -76,9 +82,14 @@
 				var game = find(games, self.socket.id);
 				if (self) game = game || findByDungeonId(self.socket.id);
 				if (game) {
-					if (game.dungeons.length <= 1) remove(games, game);
-					game.removeDungeon(self.socket.id);
-					game.broadcast('update', game.toJSON());
+          game.removeDungeon(self.socket.id);
+					if (game.dungeons.length === 0) {
+            game.destroy();
+            remove(games, findIndex(games, game.id));
+          } else {
+            game.removeDungeon(self.socket.id);
+            game.broadcast('update', game.toJSON());
+          }
 				}
 				console.log("Disconnected: " + self.socket.id);
 			});
@@ -90,7 +101,8 @@
 
 			this.socket.on('move-player', function (direction) {
 				self.movePlayer(direction);
-				var game = findByDungeonId(self.id);
+        var game = findByDungeonId(self.id);
+        self.lastUpdateTime = 0;
 				game.broadcast('update', game.toJSON());
 			});
 
@@ -102,6 +114,14 @@
 				dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
 				game.broadcast('update', game.toJSON());
 			});
+
+			this.socket.on('ready', function(dungeonId) {
+				var game = findByDungeonId(dungeonId);
+				var dungeon = find(game.dungeons, dungeonId);
+        dungeon.player.ready = !dungeon.player.ready;
+        game.checkReady();
+				game.broadcast('update', game.toJSON());
+      });
 
 		},
 		applyOption: function(x, y, optionName, bully) {
@@ -260,8 +280,11 @@
 				id: this.id,
 				area: this.area,
 				life: this.life,
-				money: this.money,
+        money: this.money,
+        lastUpdateTime: this.lastUpdateTime,
 				player: this.player,
+        config: this.config,
+        modifiers: this.modifiers,
 			};
 		},
 		createArea: function(x, y, numberOfCells) {
@@ -277,8 +300,8 @@
 				for(var column = numberOfCells; column > 0; column--) {
 					this.area[row].push({
 						style: {
-							width: cellSize - 1 + 'px',
-							height: cellSize - 1 + 'px',
+							width: cellSize + 'px',
+							height: cellSize + 'px',
 						},
 						state: squareStates[0],
 					});
@@ -288,6 +311,7 @@
 				x: Math.ceil(numberOfCells/2),
 				y: 0,
 				trapped: false,
+				ready: false,
 			};
 			this.area[this.player.y][this.player.x].state = squareStates['p'];
 		},

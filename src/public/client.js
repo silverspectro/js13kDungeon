@@ -143,13 +143,18 @@
         socket.on("update", function(updatedGame) {
             if (!game) game = new Game(socket, false);
             game.updateGame(updatedGame);
+            var dungeon = find(game.dungeons, socket.id);
             toggle(startMenu, true);
             toggle(gamesList, true);
             if (game.options.length) updateGameOptions(game.options);
-            optionList.classList.remove('off');
         });
 
         socket.on("error", function () {});
+
+        socket.on('game-lost', function (data) {
+          alert(data.message);
+          socket.disconnect(false);
+        });
 
         var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
 

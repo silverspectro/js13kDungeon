@@ -113,6 +113,21 @@ nav ul li {
   margin-top: 0.3em;
 }
 
+.ready {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 0;
+  left: 0;
+  background-color: rgb(210, 102, 98);
+  border-radius: 45px;
+  cursor: pointer;
+}
+
+.ready.btn-ready {
+  background-color: rgb(133, 203, 46)
+}
+
 #start-menu {
   position: absolute;
   display: flex;
@@ -169,6 +184,7 @@ nav ul li {
   width: 400px;
   height: 410px;
   margin: 1em;
+  overflow-x: visible;
 }
 
 .area-container:nth-child(2n+2) .area {
@@ -176,6 +192,10 @@ nav ul li {
   right: initial;
 }
 
+.area-container:nth-child(2n+2) .ready {
+  right: 0;
+  left: initial;
+}
 
 .area-container:nth-child(2n+2) .life-container {
   left: 0px;
@@ -244,6 +264,8 @@ nav ul li {
   border-right: 1px solid #000;
   border-bottom: 1px solid #000;
   flex-grow: 4;
+  box-sizing: border-box;
+  cursor: pointer;
 }
 
 .square.player {
