@@ -51,8 +51,8 @@
 			trapFeedback: config.trapFeedback || 3,
 			trapCost: config.trapCost || 15,
 			wallCost: config.wallCost || 5,
-			timeLimit: 10,
-			timeLimitMalus: 1,
+			timeLimit: config.timeLimit || 10,
+			timeLimitMalus: config.timeLimitMalus || 1,
     };
     this.modifiers = {
       timeLimitMalus: 0,

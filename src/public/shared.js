@@ -90,7 +90,6 @@
     this.clock = false;
     this.started = false;
     this.time = 0;
-    this.timeOffset = 0;
     this.options = options || [
       'Wall',
       'Trap',
@@ -136,14 +135,11 @@
       var self = this;
       this.dungeons.forEach(function (dungeon) {
         dungeon.lastUpdateTime++;
-        console.log(parseInt(dungeon.config.timeLimit), time - self.timeOffset);
-        if (dungeon.lastUpdateTime >= parseInt(dungeon.config.timeLimit) * Math.max(Math.ceil((time - self.timeOffset) / 10), 1)) {
-          console.log('passed');
+        if (dungeon.lastUpdateTime >= dungeon.config.timeLimit && (dungeon.lastUpdateTime % dungeon.config.timeLimit === 0)) {
           dungeon.life -= self.applyModifiers('timeLimitMalus', dungeon);
           dungeon.modifiers.timeLimitMalus++;
         }
         if (dungeon.lastUpdateTime < dungeon.config.timeLimit) {
-          self.timeOffset = time;
           dungeon.modifiers.timeLimitMalus = 0;
         }
         if (dungeon.life <= 0 && !dungeon.player.lost && self.isServer) {
