@@ -113,13 +113,13 @@
     updateGameOptionsSelected();
   }
 
-  /* -------- Game Class -------- */
+  /* -------- ClientController Class -------- */
   
   /**
-   * Game Class
+   * ClientController Class
    * @param {socket} socket
    */
-  function Game(socket, options) {
+  function ClientController(socket, options) {
     this.room = socket;
     this.id = this.room.id;
     this.dungeons = [];
@@ -133,7 +133,7 @@
     ];
   }
 
-  Game.prototype = {
+  ClientController.prototype = {
     updateGame: function (game) {
       this.options = game.options;
       this.updateDungeons(game.dungeons);
@@ -321,7 +321,7 @@
     },
   }
 
-  /* -------- End Game Class -------- */
+  /* -------- End ClientController Class -------- */
 
 
 
@@ -343,7 +343,7 @@
     });
 
     socket.on("game-created", function (newGame) {
-      game = new Game(socket);
+      game = new ClientController(socket);
       game.updateGame(newGame);
       updateGameOptions(game.options);
       toggle(startMenu);
@@ -351,7 +351,7 @@
     });
 
     socket.on("update", function (updatedGame) {
-      if (!game) game = new Game(socket);
+      if (!game) game = new ClientController(socket);
       game.updateGame(updatedGame);
       var dungeon = find(game.dungeons, socket.id);
       toggle(startMenu, true);

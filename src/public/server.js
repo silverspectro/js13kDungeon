@@ -1,12 +1,14 @@
 "use strict";
 
-/* -------- Game Class -------- */
+/* -------- ServerController Class -------- */
+
 var MAX_CLOCK_TIME = 60 * 30;
+
 /**
- * Game Class
+ * ServerController Class
  * @param {socket} socket
  */
-function Game(socket, options) {
+function ServerController(socket, options) {
   this.room = socket;
   this.id = this.room.id;
   this.dungeons = [];
@@ -20,7 +22,7 @@ function Game(socket, options) {
   ];
 }
 
-Game.prototype = {
+ServerController.prototype = {
   destroy: function () {
     clearInterval(this.clock);
     this.started = false;
@@ -48,9 +50,6 @@ Game.prototype = {
     }
 
     this.reduceLifeOnClock(this.time);
-    // @TODO
-    // Check clock time to reduce life
-    // client can't unready the party
     this.broadcast('update', self.toJSON());
   },
   reduceLifeOnClock: function (time) {
@@ -86,7 +85,7 @@ Game.prototype = {
     var refDungeon = find(this.dungeons, dungeon.id);
     if (!refDungeon) this.dungeons.push(dungeon);
     else {
-      console.warn(dungeon.id + 'already exist in thsi game');
+      console.warn(dungeon.id + ' already exist in this game.');
     }
   },
   checkReady: function () {
@@ -113,7 +112,6 @@ Game.prototype = {
       var dungeon = dungeons[index];
       var refIndex = dungeon ? findIndex(self.dungeons, dungeon.id) : undefined;
       var refDungeon = refIndex >= 0 ? self.dungeons[refIndex] : undefined;
-      // console.log(dungeon, refIndex, refDungeon);
       if (refDungeon && dungeon && refDungeon.id === dungeon.id) {
         refDungeon.area = dungeon.area;
         refDungeon.life = dungeon.life;
@@ -137,10 +135,12 @@ Game.prototype = {
     }
     treatDungeons();
   },
+
   broadcast: function (eventName, data) {
     this.room.broadcast.to(this.room.id).emit(eventName, data);
     this.room.emit(eventName, data); // for itself
   },
+  
   toJSON: function () {
     return {
       id: this.id,
@@ -154,7 +154,7 @@ Game.prototype = {
   }
 }
 
-/* -------- End Game Class -------- */
+/* -------- End ServerController Class -------- */
 
 
 /* -------- Games Sessions -------- */
@@ -224,7 +224,7 @@ Dungeon.prototype = {
     this.createArea();
 
     this.socket.on('new-game', function () {
-      var newGame = new Game(self.socket);
+      var newGame = new ServerController(self.socket);
       games.push(newGame);
       var game = find(games, self.socket.id);
       game.addDungeon(self);
