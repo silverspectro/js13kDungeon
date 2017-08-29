@@ -114,20 +114,16 @@
   }
 
   /* -------- Game Class -------- */
-  var MAX_CLOCK_TIME = 60 * 30;
+  
   /**
    * Game Class
    * @param {socket} socket
    */
-  function Game(socket, isServer, options) {
-    this.isServer = !!isServer;
+  function Game(socket, options) {
     this.room = socket;
     this.id = this.room.id;
     this.dungeons = [];
     this.dungeonsUI = [];
-    this.clock = false;
-    this.started = false;
-    this.time = 0;
     this.options = options || [
       'Wall',
       'Trap',
@@ -135,90 +131,9 @@
   }
 
   Game.prototype = {
-    destroy: function () {
-      if (this.isServer) {
-        clearInterval(this.clock);
-        this.started = false;
-      }
-    },
-    start: function () {
-      if (this.isServer && !this.started) {
-        this.started = new Date().now;
-        this.broadcast('start');
-        this.clock = setInterval(this.checkClock.bind(this), 1000);
-      }
-    },
-    checkClock: function () {
-      var self = this;
-      this.time++;
-
-      // check if a timer exceed the max time
-      // just in case to not overload the server in case
-      // a 'disconnect' event get lost
-      if (this.time > MAX_CLOCK_TIME) {
-        clearInterval(this.clock);
-        this.broadcast('game-lost', {
-          message: "Lost - OUT OF TIME",
-        });
-
-      }
-
-      this.reduceLifeOnClock(this.time);
-      // @TODO
-      // Check clock time to reduce life
-      // client can't unready the party
-      this.broadcast('update', self.toJSON());
-    },
-    reduceLifeOnClock: function (time) {
-      var self = this;
-      this.dungeons.forEach(function (dungeon) {
-        dungeon.lastUpdateTime++;
-        if (dungeon.lastUpdateTime >= dungeon.config.timeLimit && (dungeon.lastUpdateTime % dungeon.config.timeLimit === 0)) {
-          dungeon.life -= self.applyModifiers('timeLimitMalus', dungeon);
-          dungeon.modifiers.timeLimitMalus++;
-        }
-        if (dungeon.lastUpdateTime < dungeon.config.timeLimit) {
-          dungeon.modifiers.timeLimitMalus = 0;
-        }
-        if (dungeon.life <= 0 && !dungeon.player.lost && self.isServer) {
-          self.room.to(dungeon.id).emit('game-lost', {
-            message: "Lost - OUT OF TIME",
-          });
-          dungeon.play.lost = true;
-        }
-      });
-    },
-    applyModifiers: function (key, dungeon) {
-      return dungeon.config[key] + dungeon.modifiers[key];
-    },
-    removeDungeon: function (dungeonId) {
-      var dungeon = find(this.dungeons, dungeonId);
-      if (dungeon) var index = this.dungeons.indexOf(dungeon);
-      if (index >= 0) {
-        this.dungeons.splice(index, 1);
-      }
-    },
-    addDungeon: function (dungeon) {
-      var refDungeon = find(this.dungeons, dungeon.id);
-      if (!refDungeon) this.dungeons.push(dungeon);
-      else {
-        console.warn(dungeon.id + 'already exist in thsi game');
-      }
-    },
-    checkReady: function () {
-      if (!this.started && this.isServer) {
-        var isReady = false;
-        for (var i = 0; i < this.dungeons.length; i++) {
-          isReady = this.dungeons[i].player.ready;
-          if (isReady === false) break;
-        }
-        if (isReady) this.start();
-      }
-    },
     updateGame: function (game) {
       this.options = game.options;
       this.updateDungeons(game.dungeons);
-      this.checkReady();
     },
     updateDungeons: function (dungeons) {
       var self = this;
@@ -229,7 +144,6 @@
         var dungeon = dungeons[index];
         var refIndex = dungeon ? findIndex(self.dungeons, dungeon.id) : undefined;
         var refDungeon = refIndex >= 0 ? self.dungeons[refIndex] : undefined;
-        // console.log(dungeon, refIndex, refDungeon);
         if (refDungeon && dungeon && refDungeon.id === dungeon.id) {
           refDungeon.area = dungeon.area;
           refDungeon.life = dungeon.life;
@@ -386,10 +300,6 @@
           });
         });
       });
-    },
-    broadcast: function (eventName, data) {
-      if (this.isServer) this.room.broadcast.to(this.room.id).emit(eventName, data);
-      this.room.emit(eventName, data);
     },
     toJSON: function () {
       return {
