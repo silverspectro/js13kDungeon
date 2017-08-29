@@ -100,7 +100,7 @@ Game.prototype = {
   },
   start: function () {
     if (!this.started) {
-      this.started = new Date().now;
+      this.started = true;
     }
   },
   applyModifiers: function (key, dungeon) {
@@ -119,18 +119,16 @@ Game.prototype = {
   },
   checkReady: function () {
     if (!this.started) {
-      var isReady = false;
       for (var i = 0; i < this.dungeons.length; i++) {
-        isReady = this.dungeons[i].player.ready;
-        if (isReady === false) break;
+        if ( this.dungeons[i].player.ready === false ) return;
       }
-      if (isReady) this.start();
+      // all dungeons are ready
+      this.start();
     }
   },
   updateGame: function (game) {
     this.options = game.options;
     this.updateDungeons(game.dungeons);
-    this.checkReady();
   },
   /// @TODO review this function completly
   updateDungeons: function (dungeons) {

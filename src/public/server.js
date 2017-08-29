@@ -1,5 +1,17 @@
 "use strict";
 
+/**
+ * Transmit event to game dungeons
+ * @param {Game} game origine game
+ * @param {String} eventName event name
+ * @param {String} payload event content
+ */
+function broadcast(game, eventName, payload) {
+  game.room.broadcast.to(game.room.id).emit(eventName, payload);
+  game.room.emit(eventName, payload); // for itself
+}
+
+
 /* -------- ServerController Class -------- */
 
 var MAX_CLOCK_TIME = 60 * 30;
@@ -7,150 +19,51 @@ var MAX_CLOCK_TIME = 60 * 30;
 /**
  * ServerController Class
  * @param {socket} socket
+ * @TODO : remove controller if socket closed
  */
 function ServerController(socket, options) {
-  this.room = socket;
-  this.id = this.room.id;
-  this.dungeons = [];
-  this.dungeonsUI = [];
-  this.clock = false;
-  this.started = false;
-  this.time = 0;
-  this.options = options || [
-    'Wall',
-    'Trap',
-  ];
+  this.game = new Game(socket, options);
+  this.clock = setInterval(this.checkClock.bind(this), 1000);
 }
 
 ServerController.prototype = {
-  destroy: function () {
-    clearInterval(this.clock);
-    this.started = false;
-  },
-  start: function () {
-    if (!this.started) {
-      this.started = new Date().now;
-      this.broadcast('start');
-      this.clock = setInterval(this.checkClock.bind(this), 1000);
-    }
-  },
   checkClock: function () {
-    var self = this;
-    this.time++;
+    
+    this.game.checkReady();
+
+    if (!this.game.started) return;
 
     // check if a timer exceed the max time
     // just in case to not overload the server in case
     // a 'disconnect' event get lost
-    if (this.time > MAX_CLOCK_TIME) {
+    if (this.game.time > MAX_CLOCK_TIME) {
       clearInterval(this.clock);
-      this.broadcast('game-lost', {
-        message: "Lost - OUT OF TIME",
-      });
-
+      broadcast(this.game, 'game-lost', { message: "Lost - OUT OF TIME", });
     }
 
-    this.reduceLifeOnClock(this.time);
-    this.broadcast('update', self.toJSON());
+    this.reduceLifeOnClock(this.game.time);
+    broadcast(this.game, 'update', this.game.toJSON());
   },
   reduceLifeOnClock: function (time) {
     var self = this;
-    this.dungeons.forEach(function (dungeon) {
+    this.game.dungeons.forEach(function (dungeon) {
       dungeon.lastUpdateTime++;
-      if (dungeon.lastUpdateTime >= dungeon.config.timeLimit && (dungeon.lastUpdateTime % dungeon.config.timeLimit === 0)) {
-        dungeon.life -= self.applyModifiers('timeLimitMalus', dungeon);
+      if ((dungeon.lastUpdateTime >= dungeon.config.timeLimit) &&
+        (dungeon.lastUpdateTime % dungeon.config.timeLimit === 0)
+      ) {
+        dungeon.life -= self.game.applyModifiers('timeLimitMalus', dungeon);
         dungeon.modifiers.timeLimitMalus++;
       }
       if (dungeon.lastUpdateTime < dungeon.config.timeLimit) {
         dungeon.modifiers.timeLimitMalus = 0;
       }
-      if (dungeon.life <= 0 && !dungeon.player.lost && self.isServer) {
-        self.room.to(dungeon.id).emit('game-lost', {
+      if (dungeon.life <= 0 && !dungeon.player.lost) {
+        self.game.room.to(dungeon.id).emit('game-lost', {
           message: "Lost - OUT OF TIME",
         });
         dungeon.play.lost = true;
       }
     });
-  },
-  applyModifiers: function (key, dungeon) {
-    return dungeon.config[key] + dungeon.modifiers[key];
-  },
-  removeDungeon: function (dungeonId) {
-    var dungeon = find(this.dungeons, dungeonId);
-    if (dungeon) var index = this.dungeons.indexOf(dungeon);
-    if (index >= 0) {
-      this.dungeons.splice(index, 1);
-    }
-  },
-  addDungeon: function (dungeon) {
-    var refDungeon = find(this.dungeons, dungeon.id);
-    if (!refDungeon) this.dungeons.push(dungeon);
-    else {
-      console.warn(dungeon.id + ' already exist in this game.');
-    }
-  },
-  checkReady: function () {
-    if (!this.started) {
-      var isReady = false;
-      for (var i = 0; i < this.dungeons.length; i++) {
-        isReady = this.dungeons[i].player.ready;
-        if (isReady === false) break;
-      }
-      if (isReady) this.start();
-    }
-  },
-  updateGame: function (game) {
-    this.options = game.options;
-    this.updateDungeons(game.dungeons);
-    this.checkReady();
-  },
-  updateDungeons: function (dungeons) {
-    var self = this;
-    var index = Math.max(Math.max(self.dungeons.length - 1, dungeons.length - 1), 0);
-    var dungeonsToAdd = [];
-
-    function treatDungeons() {
-      var dungeon = dungeons[index];
-      var refIndex = dungeon ? findIndex(self.dungeons, dungeon.id) : undefined;
-      var refDungeon = refIndex >= 0 ? self.dungeons[refIndex] : undefined;
-      if (refDungeon && dungeon && refDungeon.id === dungeon.id) {
-        refDungeon.area = dungeon.area;
-        refDungeon.life = dungeon.life;
-        refDungeon.money = dungeon.money;
-        refDungeon.player = dungeon.player;
-      } else if (!refDungeon && dungeon) {
-        self.dungeons.push(dungeon);
-        if (!self.isServer) self.addDungeonUI(dungeon);
-      } else if (self.dungeons[index] && !dungeon && !find(dungeons, self.dungeons[index].id)) {
-        var deletedDungeon = self.dungeons.splice(index, 1)[0];
-        self.dungeonsUI.splice(index, 1);
-        if (!self.isServer) self.deleteDungeonUI(deletedDungeon.id);
-      }
-      index--;
-
-      if (index < 0) {
-        return;
-      } else {
-        treatDungeons();
-      }
-    }
-    treatDungeons();
-  },
-
-  broadcast: function (eventName, data) {
-    this.room.broadcast.to(this.room.id).emit(eventName, data);
-    this.room.emit(eventName, data); // for itself
-  },
-  
-  toJSON: function () {
-    return {
-      id: this.id,
-      time: this.time,
-      started: this.started,
-      dungeons: this.dungeons.map(function (dungeon) {
-        return dungeon.toJSON ? dungeon.toJSON() : dungeon;
-      }),
-      options: this.options,
-    }
   }
 }
 
@@ -197,7 +110,7 @@ var squareStates = {
  * @param {id}
  */
 function Dungeon(socket, config) {
-  
+
   this.socket = socket;
   this.id = this.socket.id;
   this.area = [];
@@ -213,11 +126,11 @@ function Dungeon(socket, config) {
     timeLimit: config.timeLimit || 10,
     timeLimitMalus: config.timeLimitMalus || 1,
   };
-  
+
   this.modifiers = {
     timeLimitMalus: 0,
   };
-  
+
   this.init();
 }
 
@@ -228,8 +141,8 @@ Dungeon.prototype = {
     this.createArea();
 
     this.socket.on('new-game', function () {
-      var newGame = new ServerController(self.socket);
-      games.push(newGame);
+      var controller = new ServerController(self.socket);
+      games.push(controller.game);
       var game = find(games, self.socket.id);
       game.addDungeon(self);
       self.socket.emit('game-created', game.toJSON());
@@ -249,7 +162,7 @@ Dungeon.prototype = {
           remove(games, findIndex(games, game.id));
         } else {
           game.removeDungeon(self.socket.id);
-          game.broadcast('update', game.toJSON());
+          broadcast(game, 'update', game.toJSON());
         }
       }
       console.log("Disconnected: " + self.socket.id);
@@ -264,7 +177,7 @@ Dungeon.prototype = {
       self.movePlayer(direction);
       var game = findByDungeonId(self.id);
       self.lastUpdateTime = 0;
-      game.broadcast('update', game.toJSON());
+      broadcast(game, 'update', game.toJSON());
     });
 
     this.socket.on('apply-option', function (data) {
@@ -273,15 +186,15 @@ Dungeon.prototype = {
       var opponent = find(game.dungeons, data.opponentId);
       if (opponent.id !== dungeon.id) opponent.deduceMoney(data.x, data.y, data.option.trim(), dungeon);
       dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
-      game.broadcast('update', game.toJSON());
+      broadcast(game, 'update', game.toJSON());
     });
 
     this.socket.on('ready', function (dungeonId) {
       var game = findByDungeonId(dungeonId);
       var dungeon = find(game.dungeons, dungeonId);
       dungeon.player.ready = !dungeon.player.ready;
-      game.checkReady();
-      game.broadcast('update', game.toJSON());
+      // game.checkReady();
+      broadcast(game, 'update', game.toJSON());
     });
 
   },
@@ -491,7 +404,7 @@ Dungeon.prototype = {
   joinRoom: function (game) {
     this.socket.join(game.id);
     game.addDungeon(this);
-    game.broadcast('update', game.toJSON());
+    broadcast(game, 'update', game.toJSON());
     console.log(this.socket.id + " has joined: " + game.id);
   }
 };
