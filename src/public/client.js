@@ -32,7 +32,7 @@
   }
 
   var elementsOn = {},
-    startMenu = getElementById('start-menu');
+      startMenu = getElementById('start-menu');
 
   function toggle(element, force) {
     elementsOn[element.id] = element.className.includes('off');
@@ -44,10 +44,10 @@
   }
 
   var gamesList = getElementById('games-menu'),
-    gamesUl = getElementById('games-list'),
-    optionList = getElementById('option-list'),
-    optionListUl = optionList.getElementsByTagName('ul')[0],
-    selectedGameId;
+      gamesUl = getElementById('games-list'),
+      optionList = getElementById('option-list'),
+      optionListUl = optionList.getElementsByTagName('ul')[0],
+      selectedGameId;
 
   function updateGameListUI() {
     var listArray = Array.prototype.slice.apply(gamesUl.children);
@@ -74,7 +74,6 @@
     });
   }
 
-
   function updateGameOptionsSelected() {
     var optionButtons = Array.prototype.slice.apply(optionListUl.getElementsByTagName('button'));
 
@@ -84,7 +83,7 @@
       else button.classList.remove('selected');
     });
 
-    game.selectedOption = game.options[selectedOption];
+    controller.selectedOption = controller.game.options[selectedOption];
   }
 
   function selectOption(event) {
@@ -120,56 +119,54 @@
    * @param {socket} socket
    */
   function ClientController(socket, options) {
-    this.room = socket;
-    this.id = this.room.id;
-    this.dungeons = [];
+    this.game = new Game(socket, options);
     this.dungeonsUI = [];
-    this.clock = false;
-    this.started = false;
-    this.time = 0;
-    this.options = options || [
-      'Wall',
-      'Trap',
-    ];
+    this.selectedOption = "";
   }
 
   ClientController.prototype = {
     updateGame: function (game) {
-      this.options = game.options;
+      this.game.options = game.options;
       this.updateDungeons(game.dungeons);
+      this.updateUI();
     },
     updateDungeons: function (dungeons) {
+
       var self = this;
-      var index = Math.max(Math.max(self.dungeons.length - 1, dungeons.length - 1), 0);
+      var maxIndex = Math.max(Math.max(self.game.dungeons.length - 1, dungeons.length - 1), 0);
       var dungeonsToAdd = [];
 
-      function treatDungeons() {
+      function treatDungeons(index) {
+
+        if (index < 0) { return; } 
+          
         var dungeon = dungeons[index];
-        var refIndex = dungeon ? findIndex(self.dungeons, dungeon.id) : undefined;
-        var refDungeon = refIndex >= 0 ? self.dungeons[refIndex] : undefined;
+        var refDungeon = dungeon ? find(self.game.dungeons, dungeon.id) : undefined;
+
         if (refDungeon && dungeon && refDungeon.id === dungeon.id) {
           refDungeon.area = dungeon.area;
           refDungeon.life = dungeon.life;
           refDungeon.money = dungeon.money;
           refDungeon.player = dungeon.player;
-        } else if (!refDungeon && dungeon) {
-          self.dungeons.push(dungeon);
-          if (!self.isServer) self.addDungeonUI(dungeon);
-        } else if (self.dungeons[index] && !dungeon && !find(dungeons, self.dungeons[index].id)) {
-          var deletedDungeon = self.dungeons.splice(index, 1)[0];
-          self.dungeonsUI.splice(index, 1);
-          if (!self.isServer) self.deleteDungeonUI(deletedDungeon.id);
-        }
-        index--;
 
-        if (index < 0) {
-          return;
-        } else {
-          treatDungeons();
+        } else if (!refDungeon && dungeon) {
+          self.game.dungeons.push(dungeon);
+
+          // UI specific
+          self.addDungeonUI(dungeon);
+
+        } else if (self.game.dungeons[index] && !dungeon && !find(dungeons, self.game.dungeons[index].id)) {
+          var deletedDungeon = self.game.dungeons.splice(index, 1)[0];
+          self.dungeonsUI.splice(index, 1);
+
+          // UI specific
+          self.deleteDungeonUI(deletedDungeon.id);
         }
+        
+        treatDungeons(--index);
       }
-      treatDungeons();
-      if (!self.isServer) self.updateUI();
+
+      treatDungeons(maxIndex);
     },
     deleteDungeonUI: function (dungeonId) {
       var dungeonUI = document.getElementById(dungeonId);
@@ -180,10 +177,10 @@
       var dungeonId = selectedSquare.getAttribute('data-dungeon-id');
       var x = parseInt(selectedSquare.getAttribute('data-area-x'), 10);
       var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
-      var dungeon = find(this.dungeons, dungeonId);
+      var dungeon = find(this.game.dungeons, dungeonId);
       this.broadcast('apply-option', {
         dungeonId: dungeonId,
-        opponentId: this.id,
+        opponentId: this.game.id,
         option: ' ' + this.selectedOption.toLowerCase(),
         x: x,
         y: y,
@@ -226,7 +223,7 @@
       }, {
         click: function (event) {
           var dungeonId = event.target.getAttribute('data-dungeon-id');
-          if (dungeonId === self.id) self.broadcast('ready', dungeonId);
+          if (dungeonId === self.game.id) self.broadcast('ready', dungeonId);
         },
       });
 
@@ -270,9 +267,9 @@
       uiDungeon.readyButton = readyButton;
       this.dungeonsUI.push(uiDungeon);
     },
-    updateUI: function (game) {
+    updateUI: function () {
       var self = this;
-      this.dungeons.forEach(function (dungeon, index) {
+      this.game.dungeons.forEach(function (dungeon, index) {
         const dungeonUI = find(self.dungeonsUI, dungeon.id);
         // update lifeBar height
         applyStyleOn(self.dungeonsUI[index].lifeBar, {
@@ -305,19 +302,7 @@
       });
     },
     broadcast: function (eventName, data) {
-      this.room.emit(eventName, data);
-    },
-    toJSON: function () {
-      return {
-        id: this.id,
-        area: this.area,
-        life: this.life,
-        money: this.money,
-        lastUpdateTime: this.lastUpdateTime,
-        player: this.player,
-        config: this.config,
-        modifiers: this.modifiers,
-      };
+      socket.emit(eventName, data);
     },
   }
 
@@ -326,10 +311,10 @@
 
 
   var socket, //Socket.IO client
-    game,
-    selectedOption = 0,
-    mouseX = 0,
-    mouseY = 0;
+      controller,
+      selectedOption = 0,
+      mouseX = 0,
+      mouseY = 0;
 
   /**
    * Binde Socket.IO and button events
@@ -343,20 +328,20 @@
     });
 
     socket.on("game-created", function (newGame) {
-      game = new ClientController(socket);
-      game.updateGame(newGame);
-      updateGameOptions(game.options);
+      controller = new ClientController(socket);
+      controller.updateGame(newGame);
+      updateGameOptions(controller.game.options);
       toggle(startMenu);
       optionList.classList.remove('off');
     });
 
     socket.on("update", function (updatedGame) {
-      if (!game) game = new ClientController(socket);
-      game.updateGame(updatedGame);
-      var dungeon = find(game.dungeons, socket.id);
+      if (!controller) controller = new ClientController(socket);
+      controller.updateGame(updatedGame);
+      var dungeon = find(controller.game.dungeons, socket.id);
       toggle(startMenu, true);
       toggle(gamesList, true);
-      if (game.options.length) updateGameOptions(game.options);
+      if (controller.game.options.length) updateGameOptions(controller.game.options);
     });
 
     socket.on("error", function () {});
@@ -403,16 +388,13 @@
     window.addEventListener('keyup', function (event) {
       var key = event.keyCode;
       var direction;
-      if (game) {
-        if (key === 87 || key === 38) {
-          direction = 'up';
-        } else if (key === 40 || key === 83) {
-          direction = 'down';
-        } else if (key === 65 || key === 37) {
-          direction = 'left';
-        } else if (key === 68 || key === 39) {
-          direction = 'right';
-        }
+      if (controller) {
+        
+        if      (key === 87 || key === 38) { direction = 'up'; }
+        else if (key === 40 || key === 83) { direction = 'down'; }
+        else if (key === 65 || key === 37) { direction = 'left'; }
+        else if (key === 68 || key === 39) { direction = 'right'; }
+
         if (direction) socket.emit('move-player', direction);
       }
     });

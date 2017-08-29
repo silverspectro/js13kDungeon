@@ -197,13 +197,15 @@ var squareStates = {
  * @param {id}
  */
 function Dungeon(socket, config) {
+  
   this.socket = socket;
   this.id = this.socket.id;
   this.area = [];
   this.life = 100;
   this.money = 100;
-  config = config || {};
   this.lastUpdateTime = 0;
+
+  config = config || {};
   this.config = {
     trapFeedback: config.trapFeedback || 3,
     trapCost: config.trapCost || 15,
@@ -211,9 +213,11 @@ function Dungeon(socket, config) {
     timeLimit: config.timeLimit || 10,
     timeLimitMalus: config.timeLimitMalus || 1,
   };
+  
   this.modifiers = {
     timeLimitMalus: 0,
   };
+  
   this.init();
 }
 
