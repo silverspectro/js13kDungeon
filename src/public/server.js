@@ -6,8 +6,7 @@ var MAX_CLOCK_TIME = 60 * 30;
  * Game Class
  * @param {socket} socket
  */
-function Game(socket, isServer, options) {
-  this.isServer = !!isServer;
+function Game(socket, options) {
   this.room = socket;
   this.id = this.room.id;
   this.dungeons = [];
@@ -23,13 +22,11 @@ function Game(socket, isServer, options) {
 
 Game.prototype = {
   destroy: function () {
-    if (this.isServer) {
-      clearInterval(this.clock);
-      this.started = false;
-    }
+    clearInterval(this.clock);
+    this.started = false;
   },
   start: function () {
-    if (this.isServer && !this.started) {
+    if (!this.started) {
       this.started = new Date().now;
       this.broadcast('start');
       this.clock = setInterval(this.checkClock.bind(this), 1000);
@@ -93,7 +90,7 @@ Game.prototype = {
     }
   },
   checkReady: function () {
-    if (!this.started && this.isServer) {
+    if (!this.started) {
       var isReady = false;
       for (var i = 0; i < this.dungeons.length; i++) {
         isReady = this.dungeons[i].player.ready;
@@ -139,144 +136,10 @@ Game.prototype = {
       }
     }
     treatDungeons();
-    if (!self.isServer) self.updateUI();
-  },
-  deleteDungeonUI: function (dungeonId) {
-    var dungeonUI = document.getElementById(dungeonId);
-    document.getElementsByTagName('main')[0].removeChild(dungeonUI);
-  },
-  applyOptionEvent: function (event) {
-    var selectedSquare = event.target;
-    var dungeonId = selectedSquare.getAttribute('data-dungeon-id');
-    var x = parseInt(selectedSquare.getAttribute('data-area-x'), 10);
-    var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
-    var dungeon = find(this.dungeons, dungeonId);
-    this.broadcast('apply-option', {
-      dungeonId: dungeonId,
-      opponentId: this.id,
-      option: ' ' + this.selectedOption.toLowerCase(),
-      x: x,
-      y: y,
-    });
-  },
-  addDungeonUI: function (dungeon) {
-    var self = this;
-    var uiDungeon = {
-      id: dungeon.id,
-      area: [],
-    };
-
-    // initialize the UI elements
-
-    var areaContainer = createUIElement('div', {
-      class: 'area-container',
-      id: dungeon.id,
-    });
-    var dungeonName = createUIElement('h1', {
-      class: 'dungeon-name',
-    });
-    var area = createUIElement('div', {
-      class: 'area',
-    });
-    var lifeContainer = createUIElement('div', {
-      class: 'life-container',
-    });
-    var lifeBar = createUIElement('div', {
-      class: 'life-bar',
-    });
-    var lifeCount = createUIElement('p', {
-      class: 'life-count',
-    });
-    var moneyCount = createUIElement('p', {
-      class: 'money-count',
-    });
-    var readyButton = createUIElement('div', {
-      class: 'ready',
-      'data-dungeon-id': dungeon.id,
-    }, {
-      click: function (event) {
-        var dungeonId = event.target.getAttribute('data-dungeon-id');
-        if (dungeonId === self.id) self.broadcast('ready', dungeonId);
-      },
-    });
-
-    // Create the area DOM squares
-    // and associate it to the new uiDungeon
-    // for update loop and performance
-
-    dungeon.area.forEach(function (row, rowIndex) {
-      var areaRow = [];
-      row.forEach(function (squareState, columnIndex) {
-        var square = createUIElement('div', {
-          class: squareState,
-          'data-area-x': rowIndex,
-          'data-area-y': columnIndex,
-          'data-dungeon-id': dungeon.id,
-        }, {
-          click: self.applyOptionEvent.bind(self),
-        });
-        area.appendChild(square);
-        areaRow.push(square);
-      });
-      uiDungeon.area.push(areaRow);
-    });
-
-    // append the elements to the DOM
-    lifeContainer.appendChild(lifeBar);
-    lifeContainer.appendChild(lifeCount);
-    lifeContainer.appendChild(moneyCount);
-
-    areaContainer.appendChild(dungeonName);
-    areaContainer.appendChild(lifeContainer);
-    areaContainer.appendChild(readyButton);
-    areaContainer.appendChild(area);
-
-    document.getElementsByTagName('main')[0].appendChild(areaContainer);
-
-    // map the element to the uiDungeon
-    uiDungeon.lifeBar = lifeBar;
-    uiDungeon.lifeCount = lifeCount;
-    uiDungeon.moneyCount = moneyCount;
-    uiDungeon.readyButton = readyButton;
-    this.dungeonsUI.push(uiDungeon);
-  },
-  updateUI: function (game) {
-    var self = this;
-    this.dungeons.forEach(function (dungeon, index) {
-      const dungeonUI = find(self.dungeonsUI, dungeon.id);
-      // update lifeBar height
-      applyStyleOn(self.dungeonsUI[index].lifeBar, {
-        height: dungeon.life + '%',
-      });
-
-      // update life count
-      dungeonUI.lifeCount.innerHTML = dungeon.life;
-
-      // update money count
-      dungeonUI.moneyCount.innerHTML = dungeon.money;
-
-      // ready button
-      var otherUi = find(self.dungeonsUI, dungeon.id);
-      if (dungeon.player.ready) {
-        otherUi.readyButton.classList.add('btn-ready');
-      } else {
-        otherUi.readyButton.classList.remove('btn-ready');
-      }
-
-      // update area state
-      dungeon.area.forEach(function (row, rowIndex) {
-        row.forEach(function (column, columnIndex) {
-          applyAttributesOn(dungeonUI.area[rowIndex][columnIndex], {
-            class: column.state,
-          });
-          applyStyleOn(dungeonUI.area[rowIndex][columnIndex], column.style);
-        });
-      });
-    });
   },
   broadcast: function (eventName, data) {
-    if (this.isServer) this.room.broadcast.to(this.room.id).emit(eventName, data);
-    this.room.emit(eventName, data);
+    this.room.broadcast.to(this.room.id).emit(eventName, data);
+    this.room.emit(eventName, data); // for itself
   },
   toJSON: function () {
     return {
@@ -361,7 +224,7 @@ Dungeon.prototype = {
     this.createArea();
 
     this.socket.on('new-game', function () {
-      var newGame = new Game(self.socket, true);
+      var newGame = new Game(self.socket);
       games.push(newGame);
       var game = find(games, self.socket.id);
       game.addDungeon(self);

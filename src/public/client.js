@@ -124,6 +124,9 @@
     this.id = this.room.id;
     this.dungeons = [];
     this.dungeonsUI = [];
+    this.clock = false;
+    this.started = false;
+    this.time = 0;
     this.options = options || [
       'Wall',
       'Trap',
@@ -301,17 +304,21 @@
         });
       });
     },
+    broadcast: function (eventName, data) {
+      this.room.emit(eventName, data);
+    },
     toJSON: function () {
       return {
         id: this.id,
-        time: this.time,
-        started: this.started,
-        dungeons: this.dungeons.map(function (dungeon) {
-          return dungeon.toJSON ? dungeon.toJSON() : dungeon;
-        }),
-        options: this.options,
-      }
-    }
+        area: this.area,
+        life: this.life,
+        money: this.money,
+        lastUpdateTime: this.lastUpdateTime,
+        player: this.player,
+        config: this.config,
+        modifiers: this.modifiers,
+      };
+    },
   }
 
   /* -------- End Game Class -------- */
@@ -336,7 +343,7 @@
     });
 
     socket.on("game-created", function (newGame) {
-      game = new Game(socket, false);
+      game = new Game(socket);
       game.updateGame(newGame);
       updateGameOptions(game.options);
       toggle(startMenu);
@@ -344,7 +351,7 @@
     });
 
     socket.on("update", function (updatedGame) {
-      if (!game) game = new Game(socket, false);
+      if (!game) game = new Game(socket);
       game.updateGame(updatedGame);
       var dungeon = find(game.dungeons, socket.id);
       toggle(startMenu, true);
