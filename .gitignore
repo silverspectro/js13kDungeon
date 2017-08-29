@@ -3,3 +3,4 @@
 SOURCES/
 public/
 build/
+package-lock.json
