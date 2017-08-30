@@ -64,12 +64,13 @@
     init: function() {
       var self = this;
 
-      this.createArea();
+      // this.createArea();
 
-      this.socket.on('new-game', function () {
+      this.socket.on('new-game', function (payload) {
         var newGame = new Game(self.socket, true);
         games.push(newGame);
         var game = find(games, self.socket.id);
+        self.createArea(payload.areaWidth, payload.areaHeight);
         game.addDungeon(self);
         self.socket.emit('game-created', game.toJSON());
       });
@@ -94,33 +95,40 @@
         console.log("Disconnected: " + self.socket.id);
       });
 
-      this.socket.on('join-game', function (gameId) {
-        var game = find(games, gameId);
+      this.socket.on('join-game', function (payload) {
+        var game = find(games, payload.gameId);
+        self.createArea(payload.areaWidth, payload.areaHeight);
         if (game) self.joinRoom(game);
       });
 
       this.socket.on('move-player', function (direction) {
-        self.movePlayer(direction);
         var game = findByDungeonId(self.id);
-        self.lastUpdateTime = 0;
-        game.broadcast('update', game.toJSON());
+        if (game && game.started) {
+          self.movePlayer(direction);
+          self.lastUpdateTime = 0;
+          game.broadcast('update', game.toJSON());
+        }
       });
 
       this.socket.on('apply-option', function (data) {
         var game = findByDungeonId(data.dungeonId);
-        var dungeon = find(game.dungeons, data.dungeonId);
-        var opponent = find(game.dungeons, data.opponentId);
-        if (opponent.id !== dungeon.id) opponent.deduceMoney(data.x, data.y, data.option.trim(), dungeon);
-        dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
-        game.broadcast('update', game.toJSON());
+        if (game && game.started) {
+          var dungeon = find(game.dungeons, data.dungeonId);
+          var opponent = find(game.dungeons, data.opponentId);
+          if (opponent.id !== dungeon.id) opponent.deduceMoney(data.x, data.y, data.option.trim(), dungeon);
+          dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
+          game.broadcast('update', game.toJSON());
+        }
       });
 
       this.socket.on('ready', function(dungeonId) {
         var game = findByDungeonId(dungeonId);
-        var dungeon = find(game.dungeons, dungeonId);
-        dungeon.player.ready = !dungeon.player.ready;
-        game.checkReady();
-        game.broadcast('update', game.toJSON());
+        if (game) {
+          var dungeon = find(game.dungeons, dungeonId);
+          dungeon.player.ready = !dungeon.player.ready;
+          game.checkReady();
+          game.broadcast('update', game.toJSON());
+        }
       });
 
     },
@@ -135,7 +143,7 @@
           break;
         }
         case 'trap': {
-          if (this.area[x][y].state.includes('player') 
+          if (this.area[x][y].state === 'square'
             && bully.money >= this.config.trapCost 
             && this.id !== bully.id) {
             this.player.trapped = true;
@@ -155,7 +163,7 @@
           break;
         }
         case 'trap': {
-          if (victim.area[x][y].state.includes('player') && !victim.area[x][y].state.includes('trap')) {
+          if (victim.area[x][y].state === 'square') {
             if (this.money >= this.config.trapCost) moneyToDeduce += this.config.trapCost;
           }
           break;
@@ -172,10 +180,15 @@
           movementValue += (squareY - 1) >= 0 ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
-              this.area[squareY - movementValue][squareX].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.y -= movementValue;
-              this.life--;
+              if (this.area[squareY - movementValue][squareX].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY - movementValue][squareX].state = 'square';
+              } else {
+                this.area[squareY - movementValue][squareX].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.y -= movementValue;
+                this.life--;
+              }
             }	
           }
           break;
@@ -183,11 +196,16 @@
         case 'down': {
           movementValue += (squareY + 1) < this.area.length ? 1 : 0;
           if (movementValue > 0) {
-            if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {						
-              this.area[squareY + movementValue][squareX].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.y += movementValue;
-              this.life--;
+            if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
+              if (this.area[squareY + movementValue][squareX].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY + movementValue][squareX].state = 'square';		
+              } else {
+                this.area[squareY + movementValue][squareX].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.y += movementValue;
+                this.life--;
+              }
             }
           }
           break;
@@ -196,10 +214,15 @@
           movementValue += (squareX - 1) >= 0 ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
-              this.area[squareY][squareX - movementValue].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.x -= movementValue;
-              this.life--;
+              if (this.area[squareY][squareX - movementValue].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY][squareX - movementValue].state = 'square';
+              } else {
+                this.area[squareY][squareX - movementValue].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.x -= movementValue;
+                this.life--;
+              }
             }
           }
           break;
@@ -208,16 +231,20 @@
           movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
-              this.area[squareY][squareX + movementValue].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.x += movementValue;
-              this.life--;
+              if (this.area[squareY][squareX + movementValue].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY][squareX + movementValue].state = 'square';
+              } else {
+                this.area[squareY][squareX + movementValue].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.x += movementValue;
+                this.life--;
+              }
             }
           }
           break;
         }
       }
-      this.applyTrap(direction);
     },
     applyTrap: function(direction) {
       if (this.player.trapped) {
@@ -233,6 +260,7 @@
                   this.area[squareY + movementValue][squareX].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.y += movementValue;
+                  this.life--;
                 }	
               }
               break;
@@ -244,6 +272,7 @@
                   this.area[squareY - movementValue][squareX].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.y -= movementValue;
+                  this.life--;
                 }
               }
               break;
@@ -255,6 +284,7 @@
                   this.area[squareY][squareX + movementValue].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.x += movementValue;
+                  this.life--;
                 }
               }
               break;
@@ -266,6 +296,7 @@
                   this.area[squareY][squareX - movementValue].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.x -= movementValue;
+                  this.life--;
                 }
               }
               break;
@@ -288,16 +319,16 @@
       };
     },
     createArea: function(x, y, numberOfCells) {
-      x = x || 300;
-      y = y || 400;
-      numberOfCells = numberOfCells || 30;
-      
+      this.area = [];
+      x = typeof x === 'undefined' ? 800 : x;
+      y = typeof y === 'undefined' ? 600 : y;
+      numberOfCells = typeof numberOfCell === 'undefined' ? 30 : numberOfcell;   
       var cellSize = x / numberOfCells;
-      var rows = Math.floor(y / cellSize);
+      var rows = (y - (y % cellSize)) / cellSize;
 
       for(var row = 0; row < rows; row++) {
         this.area.push([]);
-        for(var column = numberOfCells; column > 0; column--) {
+        for(var column = 0; column < numberOfCells; column++) {
           this.area[row].push({
             style: {
               width: cellSize + 'px',

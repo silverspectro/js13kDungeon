@@ -105,9 +105,9 @@
     },
     start: function() {
       if (this.isServer && !this.started) {
-        this.started = new Date().now;
-        this.broadcast('start');
+        this.started = new Date();
         this.clock = setInterval(this.checkClock.bind(this), 1000);
+        this.broadcast('update', this.toJSON());
       }
     },
     checkClock: function() {
@@ -126,9 +126,6 @@
       }
 
       this.reduceLifeOnClock(this.time);
-      // @TODO
-      // Check clock time to reduce life
-      // client can't unready the party
       this.broadcast('update', self.toJSON());
     },
     reduceLifeOnClock: function(time) {
@@ -146,7 +143,7 @@
           self.room.to(dungeon.id).emit('game-lost', {
             message: "Lost - OUT OF TIME",
           });
-          dungeon.play.lost = true;
+          dungeon.player.lost = true;
         }
       });
     },
@@ -217,7 +214,9 @@
     },
     deleteDungeonUI: function(dungeonId) {
       var dungeonUI = document.getElementById(dungeonId);
+      var dungeonUIPreview = document.getElementById('preview-' + dungeonId);
       document.getElementsByTagName('main')[0].removeChild(dungeonUI);
+      document.getElementById('dungeon-preview').removeChild(dungeonUIPreview);
     },
     applyOptionEvent: function(event) {
       var selectedSquare = event.target;
@@ -249,6 +248,7 @@
       var dungeonName = createUIElement('h1', {
         class: 'dungeon-name',
       });
+      dungeonName.innerHTML = dungeon.id;
       var area = createUIElement('div', {
         class: 'area',
       });
@@ -306,6 +306,42 @@
       areaContainer.appendChild(area);
 
       document.getElementsByTagName('main')[0].appendChild(areaContainer);
+
+      // creating dungeon preview
+      var previewContainer = createUIElement('div', {
+        class: 'dungeon-preview-container',
+        id: 'preview-' + dungeon.id,
+        'data-dungeon-id': dungeon.id,
+      });
+      var previewLifeContainer = createUIElement('div', {
+        class: 'life-container',
+      });
+      var previewLifeBar = createUIElement('div', {
+        class: 'life-bar',
+      });
+      var previewLifeCount = createUIElement('p', {
+        class: 'life-count',
+      });
+      var previewMoneyCount = createUIElement('p', {
+        class: 'money-count',
+      });
+      var previewDungeonName = createUIElement('p', {
+        class: 'dungeon-name',
+      });
+      previewDungeonName.innerHTML = dungeon.id;
+
+      previewLifeContainer.appendChild(previewLifeBar);
+      previewLifeContainer.appendChild(previewLifeCount);
+      previewLifeContainer.appendChild(previewMoneyCount);
+
+      previewContainer.appendChild(previewDungeonName);
+      previewContainer.appendChild(previewLifeContainer);
+
+      uiDungeon.previewLifeBar = previewLifeBar;
+      uiDungeon.previewLifeCount = previewLifeCount;
+      uiDungeon.previewMoneyCount = previewMoneyCount;
+
+      document.getElementById('dungeon-preview').appendChild(previewContainer);
       
       // map the element to the uiDungeon
       uiDungeon.lifeBar = lifeBar;
@@ -322,12 +358,17 @@
         applyStyleOn(self.dungeonsUI[index].lifeBar, {
           height: dungeon.life + '%',
         });
+        applyStyleOn(self.dungeonsUI[index].previewLifeBar, {
+          width: dungeon.life + '%',
+        });
 
         // update life count
         dungeonUI.lifeCount.innerHTML = dungeon.life;
+        dungeonUI.previewLifeCount.innerHTML = dungeon.life;
         
         // update money count
         dungeonUI.moneyCount.innerHTML = dungeon.money;
+        dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
 
         // ready button
         var otherUi = find(self.dungeonsUI, dungeon.id);
