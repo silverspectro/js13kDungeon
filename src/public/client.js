@@ -44,10 +44,10 @@
   }
 
   var gamesList = getElementById('games-menu'),
-    gamesUl = getElementById('games-list'),
-    optionList = getElementById('option-list'),
-    optionListUl = optionList.getElementsByTagName('ul')[0],
-    selectedGameId;
+      gamesUl = getElementById('games-list'),
+      optionList = getElementById('option-list'),
+      optionListUl = optionList.getElementsByTagName('ul')[0],
+      selectedGameId;
 
   function updateGameListUI() {
     var listArray = Array.prototype.slice.apply(gamesUl.children);
@@ -407,10 +407,10 @@
 
 
   var socket, //Socket.IO client
-    controller,
-    selectedOption = 0,
-    mouseX = 0,
-    mouseY = 0;
+      controller,
+      selectedOption = 0,
+      mouseX = 0,
+      mouseY = 0;
 
   /**
    * Binde Socket.IO and button events
