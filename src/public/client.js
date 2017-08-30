@@ -113,7 +113,7 @@
   }
 
   /* -------- ClientController Class -------- */
-  
+
   /**
    * ClientController Class
    * @param {socket} socket
@@ -138,8 +138,10 @@
 
       function treatDungeons(index) {
 
-        if (index < 0) { return; } 
-          
+        if (index < 0) {
+          return;
+        }
+
         var dungeon = dungeons[index];
         var refDungeon = dungeon ? find(self.game.dungeons, dungeon.id) : undefined;
 
@@ -162,7 +164,7 @@
           // UI specific
           self.deleteDungeonUI(deletedDungeon.id);
         }
-        
+
         treatDungeons(--index);
       }
 
@@ -320,7 +322,7 @@
 
         // update life count
         dungeonUI.lifeCount.innerHTML = dungeon.life;
-        dungeonUI.previewLifeCount.innerHTML = dungeon.life;        
+        dungeonUI.previewLifeCount.innerHTML = dungeon.life;
 
         // update money count
         dungeonUI.moneyCount.innerHTML = dungeon.money;
@@ -355,9 +357,9 @@
   var adversaries = [];
   var adversariesPreview = [];
   var adversaryIndex = 0;
-  
+
   function updatePreview() {}
-  
+
   function selectAdversary(index) {
     if (adversaries.length < controller.game.dungeons.length - 1) {
       adversaries = Array.prototype.slice.apply(document.querySelectorAll('main .area-container:not(:first-child)'));
@@ -370,7 +372,7 @@
         });
       });
     }
-    adversaries.forEach(function(adversary, ind) {
+    adversaries.forEach(function (adversary, ind) {
       if (index !== ind) {
         adversary.classList.remove('selected');
         adversariesPreview[ind].classList.remove('selected');
@@ -380,7 +382,7 @@
       }
     });
   }
-  
+
   function navigateThroughAdversaries(event) {
     if (adversaries.length < controller.game.dungeons.length - 1) {
       adversaries = Array.prototype.slice.apply(document.querySelectorAll('main .area-container:not(:first-child)'));
@@ -405,10 +407,10 @@
 
 
   var socket, //Socket.IO client
-      controller,
-      selectedOption = 0,
-      mouseX = 0,
-      mouseY = 0;
+    controller,
+    selectedOption = 0,
+    mouseX = 0,
+    mouseY = 0;
 
   /**
    * Binde Socket.IO and button events
@@ -478,7 +480,7 @@
               gameId: socket.id,
               areaWidth: width,
               areaHeight: height,
-              });
+            });
         }
       });
     });
@@ -505,11 +507,16 @@
       var key = event.keyCode;
       var direction;
       if (controller) {
-        
-        if      (key === 87 || key === 38) { direction = 'up'; }
-        else if (key === 40 || key === 83) { direction = 'down'; }
-        else if (key === 65 || key === 37) { direction = 'left'; }
-        else if (key === 68 || key === 39) { direction = 'right'; }
+
+        if (key === 87 || key === 38) {
+          direction = 'up';
+        } else if (key === 40 || key === 83) {
+          direction = 'down';
+        } else if (key === 65 || key === 37) {
+          direction = 'left';
+        } else if (key === 68 || key === 39) {
+          direction = 'right';
+        }
 
         if (direction) socket.emit('move-player', direction);
       }

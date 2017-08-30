@@ -27,14 +27,14 @@ function ServerController(socket, options) {
 }
 
 ServerController.prototype = {
-  start: function() {
+  start: function () {
     if (this.game.checkReady()) {
       this.clock = setInterval(this.checkClock.bind(this), 1000);
       return true;
-    } 
+    }
     return false;
   },
-  destroy: function() {
+  destroy: function () {
     clearInterval(this.clock);
   },
   checkClock: function () {
@@ -43,7 +43,9 @@ ServerController.prototype = {
     // a 'disconnect' event get lost
     if (this.game.time > MAX_CLOCK_TIME) {
       clearInterval(this.clock);
-      broadcast(this.game, 'game-lost', { message: "Lost - OUT OF TIME", });
+      broadcast(this.game, 'game-lost', {
+        message: "Lost - OUT OF TIME",
+      });
     }
 
     this.reduceLifeOnClock(this.game.time);
@@ -230,10 +232,11 @@ Dungeon.prototype = {
           }
           break;
         }
-        case 'trap': {
-          if (this.area[x][y].state === 'square'
-            && bully.money >= this.config.trapCost 
-            && this.id !== bully.id) {
+      case 'trap':
+        {
+          if (this.area[x][y].state === 'square' &&
+            bully.money >= this.config.trapCost &&
+            this.id !== bully.id) {
             this.player.trapped = true;
             this.area[x][y].state += ' trap';
           }
@@ -251,7 +254,8 @@ Dungeon.prototype = {
           }
           break;
         }
-        case 'trap': {
+      case 'trap':
+        {
           if (victim.area[x][y].state === 'square') {
             if (this.money >= this.config.trapCost) moneyToDeduce += this.config.trapCost;
           }
@@ -265,136 +269,144 @@ Dungeon.prototype = {
     var squareY = this.player.y;
     var squareX = this.player.x;
     switch (direction) {
-      case 'up': {
-        movementValue += (squareY - 1) >= 0 ? 1 : 0;
-        if (movementValue > 0) {
-          if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
-            if (this.area[squareY - movementValue][squareX].state.includes('trap')) {
-              this.applyTrap(direction);
-              this.area[squareY - movementValue][squareX].state = 'square';
-            } else {
-              this.area[squareY - movementValue][squareX].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.y -= movementValue;
-              this.life--;
-            }
-          }	
-        }
-        break;
-      }
-      case 'down':{
-        movementValue += (squareY + 1) < this.area.length ? 1 : 0;
-        if (movementValue > 0) {
-          if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
-            if (this.area[squareY + movementValue][squareX].state.includes('trap')) {
-              this.applyTrap(direction);
-              this.area[squareY + movementValue][squareX].state = 'square';		
-            } else {
-              this.area[squareY + movementValue][squareX].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.y += movementValue;
-              this.life--;
-            }
-          }
-        }
-        break;
-      }
-      case 'left': {
-        movementValue += (squareX - 1) >= 0 ? 1 : 0;
-        if (movementValue > 0) {
-          if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
-            if (this.area[squareY][squareX - movementValue].state.includes('trap')) {
-              this.applyTrap(direction);
-              this.area[squareY][squareX - movementValue].state = 'square';
-            } else {
-              this.area[squareY][squareX - movementValue].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.x -= movementValue;
-              this.life--;
-            }
-          }
-        }
-        break;
-      }
-      case 'right': {
-        movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
-        if (movementValue > 0) {
-          if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
-            if (this.area[squareY][squareX + movementValue].state.includes('trap')) {
-              this.applyTrap(direction);
-              this.area[squareY][squareX + movementValue].state = 'square';
-            } else {
-              this.area[squareY][squareX + movementValue].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.x += movementValue;
-              this.life--;
-            }
-          }
-        }
-        break;
-      }
-    }
-  },
-  applyTrap: function(direction) {
-    if (this.player.trapped) {
-      for(var i = 0; i <= this.config.trapFeedback; i++) {
-        var movementValue = 0;
-        var squareY = this.player.y;
-        var squareX = this.player.x;
-        switch(direction) {
-          case 'up': {
-            movementValue += (squareY + 1) < this.area.length ? 1 : 0;
-            if (movementValue > 0) {
-              if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
-                this.area[squareY + movementValue][squareX].state = 'square player';
-                this.area[squareY][squareX].state = 'square';
-                this.player.y += movementValue;
-                this.life--;
-              }	
-            }
-            break;
-          }
-          case 'down': {
-            movementValue += (squareY - 1) >= 0 ? 1 : 0;
-            if (movementValue > 0) {
-              if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
+      case 'up':
+        {
+          movementValue += (squareY - 1) >= 0 ? 1 : 0;
+          if (movementValue > 0) {
+            if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
+              if (this.area[squareY - movementValue][squareX].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY - movementValue][squareX].state = 'square';
+              } else {
                 this.area[squareY - movementValue][squareX].state = 'square player';
                 this.area[squareY][squareX].state = 'square';
                 this.player.y -= movementValue;
                 this.life--;
               }
             }
-            break;
           }
-          case 'left': {
-            movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
-            if (movementValue > 0) {
-              if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
-                this.area[squareY][squareX + movementValue].state = 'square player';
+          break;
+        }
+      case 'down':
+        {
+          movementValue += (squareY + 1) < this.area.length ? 1 : 0;
+          if (movementValue > 0) {
+            if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
+              if (this.area[squareY + movementValue][squareX].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY + movementValue][squareX].state = 'square';
+              } else {
+                this.area[squareY + movementValue][squareX].state = 'square player';
                 this.area[squareY][squareX].state = 'square';
-                this.player.x += movementValue;
+                this.player.y += movementValue;
                 this.life--;
               }
             }
-            break;
           }
-          case 'right':{
-            movementValue += (squareX - 1) >= 0 ? 1 : 0;
-            if (movementValue > 0) {
-              if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
+          break;
+        }
+      case 'left':
+        {
+          movementValue += (squareX - 1) >= 0 ? 1 : 0;
+          if (movementValue > 0) {
+            if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
+              if (this.area[squareY][squareX - movementValue].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY][squareX - movementValue].state = 'square';
+              } else {
                 this.area[squareY][squareX - movementValue].state = 'square player';
                 this.area[squareY][squareX].state = 'square';
                 this.player.x -= movementValue;
                 this.life--;
               }
             }
-            break;
           }
+          break;
+        }
+      case 'right':
+        {
+          movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
+          if (movementValue > 0) {
+            if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
+              if (this.area[squareY][squareX + movementValue].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY][squareX + movementValue].state = 'square';
+              } else {
+                this.area[squareY][squareX + movementValue].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.x += movementValue;
+                this.life--;
+              }
+            }
+          }
+          break;
+        }
+    }
+  },
+  applyTrap: function (direction) {
+    if (this.player.trapped) {
+      for (var i = 0; i <= this.config.trapFeedback; i++) {
+        var movementValue = 0;
+        var squareY = this.player.y;
+        var squareX = this.player.x;
+        switch (direction) {
+          case 'up':
+            {
+              movementValue += (squareY + 1) < this.area.length ? 1 : 0;
+              if (movementValue > 0) {
+                if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
+                  this.area[squareY + movementValue][squareX].state = 'square player';
+                  this.area[squareY][squareX].state = 'square';
+                  this.player.y += movementValue;
+                  this.life--;
+                }
+              }
+              break;
+            }
+          case 'down':
+            {
+              movementValue += (squareY - 1) >= 0 ? 1 : 0;
+              if (movementValue > 0) {
+                if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
+                  this.area[squareY - movementValue][squareX].state = 'square player';
+                  this.area[squareY][squareX].state = 'square';
+                  this.player.y -= movementValue;
+                  this.life--;
+                }
+              }
+              break;
+            }
+          case 'left':
+            {
+              movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
+              if (movementValue > 0) {
+                if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
+                  this.area[squareY][squareX + movementValue].state = 'square player';
+                  this.area[squareY][squareX].state = 'square';
+                  this.player.x += movementValue;
+                  this.life--;
+                }
+              }
+              break;
+            }
+          case 'right':
+            {
+              movementValue += (squareX - 1) >= 0 ? 1 : 0;
+              if (movementValue > 0) {
+                if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
+                  this.area[squareY][squareX - movementValue].state = 'square player';
+                  this.area[squareY][squareX].state = 'square';
+                  this.player.x -= movementValue;
+                  this.life--;
+                }
+              }
+              break;
+            }
         }
       }
     }
   },
-  toJSON: function() {
+  toJSON: function () {
     return {
       id: this.id,
       area: this.area,
@@ -406,17 +418,17 @@ Dungeon.prototype = {
       modifiers: this.modifiers,
     };
   },
-  createArea: function(x, y, numberOfCells) {
+  createArea: function (x, y, numberOfCells) {
     this.area = [];
     x = typeof x === 'undefined' ? 800 : x;
     y = typeof y === 'undefined' ? 600 : y;
-    numberOfCells = typeof numberOfCell === 'undefined' ? 30 : numberOfcell;   
+    numberOfCells = typeof numberOfCell === 'undefined' ? 30 : numberOfcell;
     var cellSize = x / numberOfCells;
     var rows = (y - (y % cellSize)) / cellSize;
 
-    for(var row = 0; row < rows; row++) {
+    for (var row = 0; row < rows; row++) {
       this.area.push([]);
-      for(var column = 0; column < numberOfCells; column++) {
+      for (var column = 0; column < numberOfCells; column++) {
         this.area[row].push({
           style: {
             width: cellSize + 'px',
