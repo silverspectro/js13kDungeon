@@ -288,20 +288,18 @@ nav ul li {
 .area {
   position: absolute;
   display: table;
-
-  
   left: 10%;
   top: 0;
   border: 1px black solid;
 }
 
-.area .table-row{
-  display: table-row;
+.row {
+  line-height: 0px;
 }
 
 .square {
   position: relative;
-  display: table-cell;
+  display: inline-block;
   border-right: 1px solid #C3BFBF;
   border-bottom: 1px solid #C3BFBF;
   box-sizing: border-box;
@@ -350,6 +348,39 @@ nav ul li {
   background-image: url('trap.gif')!important;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+}
+
+.life::after {
+  position: absolute;
+  content: ' ';
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('life.gif');
+  background-size: cover;
+}
+
+.rhum::after {
+  position: absolute;
+  content: ' ';
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('rhum.gif');
+  background-position: center;
+}
+
+.money::after {
+  position: absolute;
+  content: ' ';
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('money.gif');
   background-repeat: no-repeat;
 }
 

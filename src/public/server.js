@@ -38,6 +38,7 @@ ServerController.prototype = {
     clearInterval(this.clock);
   },
   checkClock: function () {
+    this.game.time++;
     // check if a timer exceed the max time
     // just in case to not overload the server in case
     // a 'disconnect' event get lost
@@ -49,7 +50,20 @@ ServerController.prototype = {
     }
 
     this.reduceLifeOnClock(this.game.time);
+    this.addBonus(this.game.time);
     broadcast(this.game, 'update', this.game.toJSON());
+  },
+  addBonus: function (time) {
+    var self = this;
+    this.game.dungeons.forEach(function (dungeon) {
+      var randState = bonusMapState[Math.ceil(Math.random() * bonusMapState.length - 1)];
+      var randX = Math.floor(Math.random() * parseInt(self.game.dungeons[0].area.columns, 10));
+      var randY = Math.floor(Math.random() * parseInt(self.game.dungeons[0].area.rows, 10));
+      if (time % parseInt(dungeon.config.bonusInterval, 10) === 0) {
+        console.log(time, parseInt(parseInt(dungeon.config.bonusInterval, 10)), time % parseInt(dungeon.config.bonusInterval, 10), dungeon.id);
+        dungeon.applyState(randX, randY, randState, dungeon);
+      };
+    });
   },
   reduceLifeOnClock: function (time) {
     var self = this;
@@ -135,6 +149,10 @@ function Dungeon(socket, config) {
     wallCost: config.wallCost || 5,
     timeLimit: config.timeLimit || 10,
     timeLimitMalus: config.timeLimitMalus || 1,
+    bonusInterval: config.bonusInterval || 5,
+    lifeBonusValue: config.lifeBonusValue || 10,
+    rhumBonusValue: config.rhumBonusValue || 30,
+    moneyBonusValue: config.moneyBonusValue || 15,
   };
 
   this.modifiers = {
@@ -240,17 +258,23 @@ Dungeon.prototype = {
   },
   // return true if state applyed, false otherwise
   applyState: function (x, y, requestedState, bullyDungeon) {
-
-    if(this.id === bullyDungeon.id) return false;
-
     var originalState = this.area.getState(x, y);
-    
-    if( (requestedState & STATE_WALL) && (originalState & STATE_DEFAULT) && (bullyDungeon.money >= this.config.wallCost) ) {
-      this.area.setState(x, y, originalState | requestedState);
-      return true;
-    } else if ( (requestedState & STATE_TRAP) && (originalState & STATE_DEFAULT) && (bullyDungeon.money >= this.config.trapCost) ) {
-      this.area.setState(x, y, originalState | requestedState);
-      return true;
+
+    if(this.id === bullyDungeon.id) {
+      if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL)
+        || (requestedState & STATE_LIFE) && !(originalState & STATE_WALL)
+        || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) ) {
+        this.area.setState(x, y, (originalState & STATE_TRAP) | requestedState);
+        return true;
+      }
+    } else {
+      if( (requestedState & STATE_WALL) && !(originalState & (STATE_WALL | STATE_PLAYER)) && (bullyDungeon.money >= this.config.wallCost) ) {
+        this.area.setState(x, y, requestedState);
+        return true;
+      } else if ( (requestedState & STATE_TRAP) && !(originalState & (STATE_WALL | STATE_TRAP | STATE_PLAYER)) && (bullyDungeon.money >= this.config.trapCost) ) {
+        this.area.setState(x, y, originalState | requestedState);
+        return true;
+      }
     }
     
     return false;
@@ -315,15 +339,28 @@ Dungeon.prototype = {
     this.player.y = requestedY;
     this.life--;
 
+    if( requestedPositionState & STATE_LIFE ) {
+      this.life += this.config.lifeBonusValue;
+    }
+
+    if( requestedPositionState & STATE_RHUM ) {
+      this.life += this.config.rhumBonusValue;
+    }
+
+    if( requestedPositionState & STATE_MONEY ) {
+      this.money += this.config.moneyBonusValue;
+    }
+
+
     // apply requested cell
     if( requestedPositionState & STATE_TRAP ) {
-      this.applyTrap(direction)
+      this.applyTrap(direction);
     }
 
   },
   applyTrap: function (direction) {
 
-    var oppositeDirection
+    var oppositeDirection;
     switch (direction) {
       case MOVE_UP:
         oppositeDirection = MOVE_DOWN;
