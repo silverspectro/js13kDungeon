@@ -21,6 +21,13 @@
     return document.getElementById(id);
   }
 
+  var randomBGMap = [];
+
+  function randomiseSquare() {
+    var random = Math.floor(Math.random() * 4);
+    return random > 0 ? ' bg' + random : '';
+  }
+
   /**
    * mapStateToClass
    * @param {Int} state - binary state
@@ -323,6 +330,7 @@
 
       for(var row = 0; row < dungeon.area.rows; row++) {
         var areaRow = [];
+        var randomBGRow = [];
 
         var htmlRow = createUIElement('div', { class: "table-row" });
         area.appendChild(htmlRow);
@@ -340,9 +348,11 @@
           
           htmlRow.appendChild(square);
           areaRow.push(square);
+          randomBGRow.push(randomiseSquare());
         }
 
         uiDungeon.area.push(areaRow);
+        randomBGMap.push(randomBGRow);
       }
 
       // append the elements to the DOM
@@ -449,7 +459,7 @@
         dungeon.area.states.forEach(function (row, rowIndex) {
           row.forEach(function (column, columnIndex) {
             applyAttributesOn(dungeonUI.area[rowIndex][columnIndex], {
-              class: mapStateToClass(column.state),
+              class: mapStateToClass(column.state) + randomBGMap[rowIndex][columnIndex],
             });
             applyStyleOn(dungeonUI.area[rowIndex][columnIndex], style);
           });
@@ -494,8 +504,8 @@
       var dungeon = find(controller.game.dungeons, socket.id);
       toggle(startMenu, true);
       toggle(gamesList, true);
+      controller.selectAdversary(controller.adversaryIndex);
       if (controller.game.options.length) updateGameOptions(controller.game.options);
-      if (controller.adversaries.length === 0) controller.selectAdversary(0);
     });
 
     socket.on("error", function () {});
@@ -515,8 +525,8 @@
 
     var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
     // @TODO treat this as an option 
-    var areaColumns = 17;
-    var areaRows = 31;
+    var areaColumns = 19;
+    var areaRows = 23;
 
     buttons.forEach(function (button) {
       on(button, 'click', function () {
@@ -541,8 +551,8 @@
     });
 
     window.addEventListener('mousemove', function (event) {
-      mouseX = event.screenX;
-      mouseY = event.screenY;
+      mouseX = event.clientX;
+      mouseY = event.clientY;
     });
 
     window.addEventListener('contextmenu', function (event) {

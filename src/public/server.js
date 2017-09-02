@@ -65,10 +65,12 @@ ServerController.prototype = {
         dungeon.modifiers.timeLimitMalus = 0;
       }
       if (dungeon.life <= 0 && !dungeon.player.lost) {
-        broadcast(self.game, 'game-lost', {
-          dungeonId: dungeon.id,
-          message: "Lost - OUT OF TIME",
-        });
+        setTimeout(function () {
+          broadcast(self.game, 'game-lost', {
+            dungeonId: dungeon.id,
+            message: "Lost - OUT OF TIME",
+          });
+        }, 300);
         dungeon.player.lost = true;
       }
     });
