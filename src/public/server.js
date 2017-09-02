@@ -106,6 +106,11 @@ var controllers = [];
  * List Rooms for UI and selection
  */
 function listRooms() {
+  for (var i = 0; i < controllers.length; i++) {
+    if (controllers[i].game.dungeons.length === 0) {
+      remove(controllers, i);
+    } 
+  }
   return controllers.map(function (controller) {
     return controller.game.toJSON();
   });

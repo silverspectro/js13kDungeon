@@ -1,6 +1,5 @@
 /node_modules
 .idea/
 SOURCES/
-public/
 build/
 package-lock.json
