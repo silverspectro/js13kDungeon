@@ -151,9 +151,11 @@ Dungeon.prototype = {
       controllers.push(newController);
       var controller = find(controllers, self.socket.id);
       var game = controller ? controller.game : undefined;
-      self.createArea(payload.areaColumns, payload.areaRows);
-      game.addDungeon(self);
-      self.socket.emit('game-created', game.toJSON());
+      if(game) {
+        self.createArea(payload.areaColumns, payload.areaRows);
+        game.addDungeon(self);
+        self.socket.emit('game-created', game.toJSON());
+      }
     });
 
     this.socket.on('list-games', function () {
@@ -214,7 +216,6 @@ Dungeon.prototype = {
         var dungeon = find(game.dungeons, data.dungeonId);
         var opponent = find(game.dungeons, data.opponentId);
 
-        // console.log(data.x, data.y, data.state);
         if(dungeon.applyState(data.x, data.y, data.state, opponent)) {
           opponent.deduceMoney(data.state);
           broadcast(game, 'update', game.toJSON());
