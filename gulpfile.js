@@ -42,6 +42,11 @@ gulp.task('build-html', (done) => {
 		.pipe(gulp.dest(destination));
 });
 
+gulp.task('copy-assets', (done) => {
+	return gulp.src('./src/public/assets/*')
+		.pipe(gulp.dest(destination));
+});
+
 gulp.task('zip', (done) => {
 	return gulp.src('./public/*')
 		.pipe(zip('entry.zip')) //gulp-zip performs compression by default
@@ -60,12 +65,13 @@ gulp.task('check', gulp.series('zip', (done) => {
 	done();
 }));
 
-gulp.task('build', gulp.series('build-html', 'build-js', 'build-css', 'check', (done) => {
+gulp.task('build', gulp.series('build-html', 'build-js', 'build-css', 'copy-assets', 'check', (done) => {
 	done();
 }));
 
 gulp.task('watch', (done) => {
 	gulp.watch('./src/public/*.js', gulp.series('build-js', 'zip', 'check'));
 	gulp.watch('./src/public/*.html', gulp.series('build-html', 'check'));
-	gulp.watch('./src/public/*.css', gulp.series('build-css', 'check'));
+  gulp.watch('./src/public/*.css', gulp.series('build-css', 'check'));
+  gulp.watch('./src/public/assets/*', gulp.series('copy-assets', 'check'));
 });
