@@ -22,6 +22,49 @@
   }
 
   /**
+   * mapStateToClass
+   * @param {Int} state - binary state
+   * @return {String} css class corresponding to given state  
+   */
+  function mapStateToClass(state) {
+
+    var cssClass = "square";
+
+    if( state & STATE_PLAYER ) { cssClass += " player"; }
+    if( state & STATE_WALL ) { cssClass += " wall"; }
+    if( state & STATE_TRAP ) { cssClass += " trap"; }
+    
+    return cssClass;
+  }
+
+  /**
+   * Get controll label from available state
+   * @param {Int} state 
+   */
+  function getStateLabel(state) {
+    if( state & STATE_TRAP ) return "Trap";
+    if( state & STATE_WALL ) return "Wall";
+  }
+
+  /**
+   * getCellSize
+   * @param {Area} area
+   * @return {Object} contening width and height of an area cell  
+   */
+  function getCellSize(area) {
+    
+    var width = window.innerWidth * 40 / 100;
+    var height = window.innerHeight * 80 / 100;
+
+    var cellSize = Math.min( Math.ceil(width/area.columns), Math.ceil(height/area.rows)  );
+
+    return {
+      width: cellSize + 'px',
+      height: cellSize + 'px',
+    };
+  }
+
+  /**
    * Wipes all element from a given DOMElement
    * @param {DOMElement} element 
    */
@@ -78,37 +121,44 @@
     var optionButtons = Array.prototype.slice.apply(optionListUl.getElementsByTagName('button'));
 
     optionButtons.forEach(function (button) {
-      var dataIndex = button.getAttribute('data-option-index');
-      if (parseInt(dataIndex, 10) === parseInt(selectedOption, 10)) button.classList.add('selected');
+      var state = button.getAttribute('data-option-index');
+      if (parseInt(state, 10) == controller.selectedOption ) {
+        button.classList.add('selected');
+      }
       else button.classList.remove('selected');
     });
-
-    controller.selectedOption = controller.game.options[selectedOption];
   }
 
   function selectOption(event) {
     var optionIndex = event.target.getAttribute('data-option-index');
-    selectedOption = optionIndex;
+    controller.selectedOption = parseInt(optionIndex);
     updateGameOptionsSelected();
   }
 
   function updateGameOptions(options) {
+
+    if(options.length <= 0) {
+      throw new Error('Invalid option list for controll.')
+    }
+
     wipeElementsFrom(optionListUl);
-    options.forEach(function (option, index) {
+    if(options.indexOf(controller.selectedOption) == -1) {
+      console.log(options, options.indexOf(controller.selectedOption), controller.selectedOption);
+      controller.selectedOption = options[0];
+    }
+    
+    options.forEach(function (option) {
       var li = createUIElement('li');
-      var button = createUIElement('button', {
-        'data-option-index': index,
-      }, {
-        click: selectOption,
-      });
-      button.innerHTML = option;
+      var button = createUIElement(
+        'button', 
+        { 'data-option-index': option, },
+        { click: selectOption, }
+      );
+      button.innerHTML = getStateLabel(option);
 
       li.appendChild(button);
       optionListUl.appendChild(li);
     });
-    if (typeof selectedOption === 'undefined') {
-      selectedOption = 0;
-    }
     updateGameOptionsSelected();
   }
 
@@ -121,7 +171,7 @@
   function ClientController(socket, options) {
     this.game = new Game(socket, options);
     this.dungeonsUI = [];
-    this.selectedOption = "";
+    this.selectedOption = STATE_WALL;
   }
 
   ClientController.prototype = {
@@ -185,12 +235,13 @@
       this.broadcast('apply-option', {
         dungeonId: dungeonId,
         opponentId: this.game.id,
-        option: ' ' + this.selectedOption.toLowerCase(),
+        state: this.selectedOption,
         x: x,
         y: y,
       });
     },
     addDungeonUI: function (dungeon) {
+      
       var self = this;
       var uiDungeon = {
         id: dungeon.id,
@@ -236,22 +287,29 @@
       // and associate it to the new uiDungeon
       // for update loop and performance
 
-      dungeon.area.forEach(function (row, rowIndex) {
+      for(var row = 0; row < dungeon.area.rows; row++) {
         var areaRow = [];
-        row.forEach(function (squareState, columnIndex) {
+
+        var htmlRow = createUIElement('div', { class: "table-row" });
+        area.appendChild(htmlRow);
+
+        for(var column = 0; column < dungeon.area.columns; column++) {
+
           var square = createUIElement('div', {
-            class: squareState,
-            'data-area-x': rowIndex,
-            'data-area-y': columnIndex,
+            class: mapStateToClass(dungeon.area.states[row][column].state),
+            'data-area-x': column,
+            'data-area-y': row,
             'data-dungeon-id': dungeon.id,
           }, {
             click: self.applyOptionEvent.bind(self),
           });
-          area.appendChild(square);
+          
+          htmlRow.appendChild(square);
           areaRow.push(square);
-        });
+        }
+
         uiDungeon.area.push(areaRow);
-      });
+      }
 
       // append the elements to the DOM
       lifeContainer.appendChild(lifeBar);
@@ -337,12 +395,15 @@
         }
 
         // update area state
-        dungeon.area.forEach(function (row, rowIndex) {
+
+        var style = getCellSize(dungeon.area);
+
+        dungeon.area.states.forEach(function (row, rowIndex) {
           row.forEach(function (column, columnIndex) {
             applyAttributesOn(dungeonUI.area[rowIndex][columnIndex], {
-              class: column.state,
+              class: mapStateToClass(column.state),
             });
-            applyStyleOn(dungeonUI.area[rowIndex][columnIndex], column.style);
+            applyStyleOn(dungeonUI.area[rowIndex][columnIndex], style);
           });
         });
       });
@@ -408,7 +469,6 @@
 
   var socket, //Socket.IO client
       controller,
-      selectedOption = 0,
       mouseX = 0,
       mouseY = 0;
 
@@ -459,28 +519,28 @@
     window.addEventListener('wheel', navigateThroughAdversaries);
 
     var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
-
-    // add events to button based on id
+    // @TODO treat this as an option 
+    var areaColumns = 17;
+    var areaRows = 31;
 
     buttons.forEach(function (button) {
-      var halfXScreen = window.innerWidth / 2;
-      var width = (halfXScreen * 80) / 100;
-      var height = (window.innerHeight * 80) / 100;
       on(button, 'click', function () {
         switch (button.id) {
           case 'join-game':
+          case 'list-games':
+            socket.emit(button.id, {
+              gameId: selectedGameId
+            });
+            break;
+          case 'new-game':
             socket.emit(button.id, {
               gameId: selectedGameId,
-              areaWidth: width,
-              areaHeight: height,
+              areaColumns: areaColumns,
+              areaRows: areaRows
             });
             break;
           default:
-            socket.emit(button.id, {
-              gameId: socket.id,
-              areaWidth: width,
-              areaHeight: height,
-            });
+            throw new Error("Un-managed button : " + button.id)
         }
       });
     });
@@ -507,16 +567,10 @@
       var key = event.keyCode;
       var direction;
       if (controller) {
-
-        if (key === 87 || key === 38) {
-          direction = 'up';
-        } else if (key === 40 || key === 83) {
-          direction = 'down';
-        } else if (key === 65 || key === 37) {
-          direction = 'left';
-        } else if (key === 68 || key === 39) {
-          direction = 'right';
-        }
+        if      (key === 87 || key === 38) { direction = 'up'; }
+        else if (key === 40 || key === 83) { direction = 'down'; }
+        else if (key === 65 || key === 37) { direction = 'left'; }
+        else if (key === 68 || key === 39) { direction = 'right'; }
 
         if (direction) socket.emit('move-player', direction);
       }

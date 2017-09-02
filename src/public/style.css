@@ -287,19 +287,22 @@ nav ul li {
 
 .area {
   position: absolute;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  width: 80.4%;
-  height: 100%;
+  display: table;
+
+  
   left: 10%;
   top: 0;
   border-left: 1px black solid;
   border-top: 1px black solid;
 }
 
+.area .table-row{
+  display: table-row;
+}
+
 .square {
   position: relative;
+  display: table-cell;
   border-right: 1px solid #000;
   border-bottom: 1px solid #000;
   box-sizing: border-box;
