@@ -121,7 +121,7 @@ function Dungeon(socket, config) {
 
   this.socket = socket;
   this.id = this.socket.id;
-  this.area = [];
+  this.area = new Area();
   this.life = 100;
   this.money = 100;
   this.lastUpdateTime = 0;
@@ -151,8 +151,8 @@ Dungeon.prototype = {
       controllers.push(newController);
       var controller = find(controllers, self.socket.id);
       var game = controller ? controller.game : undefined;
-      if (game) {
-        self.createArea(payload.areaWidth, payload.areaHeight);
+      if(game) {
+        self.createArea(payload.areaColumns, payload.areaRows);
         game.addDungeon(self);
         self.socket.emit('game-created', game.toJSON());
       }
@@ -183,10 +183,20 @@ Dungeon.prototype = {
     });
 
     this.socket.on('join-game', function (payload) {
-      var controller = find(controllers, payload.gameId);
-      var game = controller ? controller.game : undefined;
-      self.createArea(payload.areaWidth, payload.areaHeight);
-      if (game && !game.started) self.joinRoom(game);
+      var syncId = payload.gameId;
+      var controller = find(controllers, syncId);
+      var refGame = controller ? controller.game : undefined;
+
+      if (refGame && !refGame.started) {
+        var refDungeon = find(refGame.dungeons, syncId);
+        if(refDungeon) {
+          self.createArea(refDungeon.area.columns, refDungeon.area.rows);
+          self.joinRoom(refGame);
+        } else {
+          console.log("Error : can't connect to game " + syncId);
+        }
+      }
+      
     });
 
     this.socket.on('move-player', function (direction) {
@@ -205,9 +215,12 @@ Dungeon.prototype = {
       if (game && game.started) {
         var dungeon = find(game.dungeons, data.dungeonId);
         var opponent = find(game.dungeons, data.opponentId);
-        if (opponent.id !== dungeon.id) opponent.deduceMoney(data.x, data.y, data.option.trim(), dungeon);
-        dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
-        broadcast(game, 'update', game.toJSON());
+
+        if(dungeon.applyState(data.x, data.y, data.state, opponent)) {
+          opponent.deduceMoney(data.state);
+          broadcast(game, 'update', game.toJSON());
+        }
+        
       }
     });
 
@@ -223,195 +236,121 @@ Dungeon.prototype = {
     });
 
   },
-  applyOption: function (x, y, optionName, bully) {
-    switch (optionName) {
-      case 'wall':
-        {
-          if (this.area[x][y].state === 'square' &&
-            bully.money >= this.config.wallCost &&
-            this.id !== bully.id) {
-            this.area[x][y].state += ' wall';
-          }
-          break;
-        }
-      case 'trap':
-        {
-          if (this.area[x][y].state === 'square' &&
-            bully.money >= this.config.trapCost &&
-            this.id !== bully.id) {
-            this.player.trapped = true;
-            this.area[x][y].state += ' trap';
-          }
-          break;
-        }
+  // return true if state applyed, false otherwise
+  applyState: function (x, y, requestedState, bullyDungeon) {
+
+    if(this.id === bullyDungeon.id) return false;
+
+    var originalState = this.area.getState(x, y);
+    
+    if( (requestedState & STATE_WALL) && (originalState & STATE_DEFAULT) && (bullyDungeon.money >= this.config.wallCost) ) {
+      this.area.setState(x, y, originalState | requestedState);
+      return true;
+    } else if ( (requestedState & STATE_TRAP) && (originalState & STATE_DEFAULT) && (bullyDungeon.money >= this.config.trapCost) ) {
+      this.area.setState(x, y, originalState | requestedState);
+      return true;
     }
+    
+    return false;
   },
-  deduceMoney: function (x, y, optionName, victim) {
-    var moneyToDeduce = 0;
-    switch (optionName) {
-      case 'wall':
-        {
-          if (victim.area[x][y].state === 'square') {
-            if (this.money >= this.config.wallCost) moneyToDeduce += this.config.wallCost;
-          }
-          break;
-        }
-      case 'trap':
-        {
-          if (victim.area[x][y].state === 'square') {
-            if (this.money >= this.config.trapCost) moneyToDeduce += this.config.trapCost;
-          }
-          break;
-        }
+  // This method should not be called if player doesn't have enough money
+  deduceMoney: function (requestedState) {
+    /// @TODO make a global cell state object to centralize label, cost, etc.
+    if (requestedState & STATE_WALL) {
+      this.money -= this.config.wallCost;
+    } else if (requestedState & STATE_TRAP) {
+      this.money -= this.config.trapCost;
     }
-    this.money -= moneyToDeduce;
   },
   movePlayer: function (direction) {
-    var movementValue = 0;
-    var squareY = this.player.y;
-    var squareX = this.player.x;
+
+    var originalY = this.player.y;
+    var originalX = this.player.x;
+    
+    var requestedY = originalY;
+    var requestedX = originalX;
+
     switch (direction) {
-      case 'up':
-        {
-          movementValue += (squareY - 1) >= 0 ? 1 : 0;
-          if (movementValue > 0) {
-            if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
-              if (this.area[squareY - movementValue][squareX].state.includes('trap')) {
-                this.applyTrap(direction);
-                this.area[squareY - movementValue][squareX].state = 'square';
-              } else {
-                this.area[squareY - movementValue][squareX].state = 'square player';
-                this.area[squareY][squareX].state = 'square';
-                this.player.y -= movementValue;
-                this.life--;
-              }
-            }
-          }
-          break;
-        }
-      case 'down':
-        {
-          movementValue += (squareY + 1) < this.area.length ? 1 : 0;
-          if (movementValue > 0) {
-            if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
-              if (this.area[squareY + movementValue][squareX].state.includes('trap')) {
-                this.applyTrap(direction);
-                this.area[squareY + movementValue][squareX].state = 'square';
-              } else {
-                this.area[squareY + movementValue][squareX].state = 'square player';
-                this.area[squareY][squareX].state = 'square';
-                this.player.y += movementValue;
-                this.life--;
-              }
-            }
-          }
-          break;
-        }
-      case 'left':
-        {
-          movementValue += (squareX - 1) >= 0 ? 1 : 0;
-          if (movementValue > 0) {
-            if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
-              if (this.area[squareY][squareX - movementValue].state.includes('trap')) {
-                this.applyTrap(direction);
-                this.area[squareY][squareX - movementValue].state = 'square';
-              } else {
-                this.area[squareY][squareX - movementValue].state = 'square player';
-                this.area[squareY][squareX].state = 'square';
-                this.player.x -= movementValue;
-                this.life--;
-              }
-            }
-          }
-          break;
-        }
-      case 'right':
-        {
-          movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
-          if (movementValue > 0) {
-            if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
-              if (this.area[squareY][squareX + movementValue].state.includes('trap')) {
-                this.applyTrap(direction);
-                this.area[squareY][squareX + movementValue].state = 'square';
-              } else {
-                this.area[squareY][squareX + movementValue].state = 'square player';
-                this.area[squareY][squareX].state = 'square';
-                this.player.x += movementValue;
-                this.life--;
-              }
-            }
-          }
-          break;
-        }
+      case MOVE_UP:
+        requestedY--;
+        break;
+        
+      case MOVE_DOWN:
+        requestedY++;
+        break;
+      
+      case MOVE_LEFT:
+        requestedX--;
+        break;
+
+      case MOVE_RIGHT:
+        requestedX++;
+        break;
+
+      default :
+        console.log("Error can't move " + direction);
     }
+    
+    // check forbidden movement
+    if( 
+      (requestedX < 0) ||
+      (requestedY < 0) ||
+      (requestedX >= this.area.columns) ||
+      (requestedY >= this.area.rows)
+    ) {
+      return;
+    }
+
+    var requestedPositionState = this.area.getState(requestedX, requestedY);
+    if(requestedPositionState & STATE_WALL) {
+      return;
+    }
+
+    // apply basic movement, update cells
+    this.area.setState(originalX, originalY, STATE_DEFAULT);
+    this.area.setState(requestedX, requestedY, STATE_PLAYER);
+    this.player.x = requestedX;
+    this.player.y = requestedY;
+    this.life--;
+
+    // apply requested cell
+    if( requestedPositionState & STATE_TRAP ) {
+      this.applyTrap(direction)
+    }
+
   },
   applyTrap: function (direction) {
-    if (this.player.trapped) {
-      for (var i = 0; i <= this.config.trapFeedback; i++) {
-        var movementValue = 0;
-        var squareY = this.player.y;
-        var squareX = this.player.x;
-        switch (direction) {
-          case 'up':
-            {
-              movementValue += (squareY + 1) < this.area.length ? 1 : 0;
-              if (movementValue > 0) {
-                if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
-                  this.area[squareY + movementValue][squareX].state = 'square player';
-                  this.area[squareY][squareX].state = 'square';
-                  this.player.y += movementValue;
-                  this.life--;
-                }
-              }
-              break;
-            }
-          case 'down':
-            {
-              movementValue += (squareY - 1) >= 0 ? 1 : 0;
-              if (movementValue > 0) {
-                if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
-                  this.area[squareY - movementValue][squareX].state = 'square player';
-                  this.area[squareY][squareX].state = 'square';
-                  this.player.y -= movementValue;
-                  this.life--;
-                }
-              }
-              break;
-            }
-          case 'left':
-            {
-              movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
-              if (movementValue > 0) {
-                if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
-                  this.area[squareY][squareX + movementValue].state = 'square player';
-                  this.area[squareY][squareX].state = 'square';
-                  this.player.x += movementValue;
-                  this.life--;
-                }
-              }
-              break;
-            }
-          case 'right':
-            {
-              movementValue += (squareX - 1) >= 0 ? 1 : 0;
-              if (movementValue > 0) {
-                if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
-                  this.area[squareY][squareX - movementValue].state = 'square player';
-                  this.area[squareY][squareX].state = 'square';
-                  this.player.x -= movementValue;
-                  this.life--;
-                }
-              }
-              break;
-            }
-        }
-      }
+
+    var oppositeDirection
+    switch (direction) {
+      case MOVE_UP:
+        oppositeDirection = MOVE_DOWN;
+        break;
+        
+      case MOVE_DOWN:
+        oppositeDirection = MOVE_UP;
+        break;
+      
+      case MOVE_LEFT:
+        oppositeDirection = MOVE_RIGHT;
+        break;
+
+      case MOVE_RIGHT:
+        oppositeDirection = MOVE_LEFT;
+        break;
+
+      default :
+        console.log("Error can't move " + direction);
+    }
+
+    for (var i = 0; i <= this.config.trapFeedback; i++) {
+      this.movePlayer(oppositeDirection);
     }
   },
   toJSON: function () {
     return {
       id: this.id,
-      area: this.area,
+      area: this.area.toJSON(),
       life: this.life,
       money: this.money,
       lastUpdateTime: this.lastUpdateTime,
@@ -420,34 +359,21 @@ Dungeon.prototype = {
       modifiers: this.modifiers,
     };
   },
-  createArea: function (x, y, numberOfCells) {
-    this.area = [];
-    x = typeof x === 'undefined' ? 800 : x;
-    y = typeof y === 'undefined' ? 600 : y;
-    numberOfCells = typeof numberOfCell === 'undefined' ? 30 : numberOfcell;
-    var cellSize = x / numberOfCells;
-    var rows = (y - (y % cellSize)) / cellSize;
+  createArea: function (columns, rows) {
+    this.area.reset(columns, rows);
+    
+    // set player position
+    var playerXPos = Math.floor( (columns-1) / 2);
+    var playerYPos = Math.floor( (rows-1) / 2);
 
-    for (var row = 0; row < rows; row++) {
-      this.area.push([]);
-      for (var column = 0; column < numberOfCells; column++) {
-        this.area[row].push({
-          style: {
-            width: cellSize + 'px',
-            height: cellSize + 'px',
-          },
-          state: squareStates[0],
-        });
-      }
-    }
     this.player = {
-      x: Math.ceil(numberOfCells / 2),
-      y: 0,
-      trapped: false,
+      x: playerXPos,
+      y: playerYPos,
       ready: false,
       lost: false,
     };
-    this.area[this.player.y][this.player.x].state = squareStates['p'];
+
+    this.area.setState(playerXPos, playerYPos, STATE_PLAYER);
   },
   joinRoom: function (game) {
     this.socket.join(game.id);

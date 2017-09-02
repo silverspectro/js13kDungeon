@@ -1,5 +1,21 @@
 "use strict";
 
+/* -------- Global const -------- */
+
+var STATE_DEFAULT  = 1; // 0x 00000001
+var STATE_PLAYER   = 2; // 0x 00000010
+var STATE_WALL     = 4; // 0x 00000100
+var STATE_TRAP     = 8; // 0x 00001000
+
+var MOVE_UP         = "up";
+var MOVE_DOWN       = "down";
+var MOVE_RIGHT      = "right";
+var MOVE_LEFT       = "left";
+
+
+/* -------- Global const end -------- */
+
+
 /* -------- General Functions -------- */
 
 /**
@@ -8,7 +24,6 @@
  * @param {element} element
  */
 function remove(array, element) {
-  console.log(array.indexOf(element));
   array.splice(array.indexOf(element), 1);
 }
 
@@ -90,8 +105,8 @@ function Game(socket, options) {
   this.started = false;
   this.time = 0;
   this.options = options || [
-    'Wall',
-    'Trap',
+    STATE_WALL,
+    STATE_TRAP,
   ];
 }
 
@@ -182,3 +197,48 @@ Game.prototype = {
 }
 
 /* -------- End Game Class -------- */
+
+
+
+/* -------- Area Class -------- */
+
+/**
+ * Area Class
+ * 
+ * @param {Int} columns
+ * @param {Int} rows
+ * 
+ * @notice Please be carefull with indexes x et y are inversed according common sens in states storage object
+ */
+function Area(columns, rows) {
+  this.reset(columns, rows);
+}
+
+Area.prototype = {
+  reset: function (columns, rows) {
+    this.columns = columns || 0;
+    this.rows = rows || 0;
+    this.states = [];
+    for(var row = 0; row < this.rows; row++) {
+      this.states.push([]);
+      for(var column = 0; column < this.columns; column++) {
+        this.states[row].push({state: STATE_DEFAULT});
+      }
+    }
+  },
+  getState: function (x, y) {
+    return this.states[y][x].state;
+  },
+  setState: function (x, y, state) {
+    this.states[y][x].state = state;
+  },
+  toJSON: function() {
+    return {
+      columns: this.columns,
+      rows: this.rows,
+      states: this.states,
+    }
+  }
+}
+
+/* -------- End Area Class -------- */
