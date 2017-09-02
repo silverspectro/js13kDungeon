@@ -8,6 +8,7 @@
  * @param {element} element
  */
 function remove(array, element) {
+  console.log(array.indexOf(element));
   array.splice(array.indexOf(element), 1);
 }
 
@@ -108,7 +109,9 @@ Game.prototype = {
   },
   removeDungeon: function (dungeonId) {
     var dungeonIndex = findIndex(this.dungeons, dungeonId);
-    if (dungeonIndex) { this.dungeons.splice(index, 1); }
+    if (dungeonIndex >= 0) {
+      this.dungeons.splice(dungeonIndex, 1);
+    }
   },
   addDungeon: function (dungeon) {
     var refDungeon = find(this.dungeons, dungeon.id);
@@ -120,11 +123,13 @@ Game.prototype = {
   checkReady: function () {
     if (!this.started) {
       for (var i = 0; i < this.dungeons.length; i++) {
-        if ( this.dungeons[i].player.ready === false ) return;
+        if (this.dungeons[i].player.ready === false) return false;
       }
       // all dungeons are ready
       this.start();
+      return true;
     }
+    return false;
   },
   updateGame: function (game) {
     this.options = game.options;
@@ -137,12 +142,14 @@ Game.prototype = {
     var dungeonsToAdd = [];
 
     function treatDungeons(index) {
-      
-      if (index < 0) { return; } 
+
+      if (index < 0) {
+        return;
+      }
 
       var dungeon = dungeons[index];
       var refDungeon = dungeon ? find(self.dungeons, dungeon.id) : undefined;
-      
+
       if (refDungeon && dungeon && refDungeon.id === dungeon.id) {
         refDungeon.area = dungeon.area;
         refDungeon.life = dungeon.life;
@@ -154,7 +161,7 @@ Game.prototype = {
         var deletedDungeon = self.dungeons.splice(index, 1)[0];
         self.dungeonsUI.splice(index, 1);
       }
-      
+
       treatDungeons(index--);
     }
 

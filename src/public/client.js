@@ -32,7 +32,7 @@
   }
 
   var elementsOn = {},
-      startMenu = getElementById('start-menu');
+    startMenu = getElementById('start-menu');
 
   function toggle(element, force) {
     elementsOn[element.id] = element.className.includes('off');
@@ -113,7 +113,7 @@
   }
 
   /* -------- ClientController Class -------- */
-  
+
   /**
    * ClientController Class
    * @param {socket} socket
@@ -138,8 +138,10 @@
 
       function treatDungeons(index) {
 
-        if (index < 0) { return; } 
-          
+        if (index < 0) {
+          return;
+        }
+
         var dungeon = dungeons[index];
         var refDungeon = dungeon ? find(self.game.dungeons, dungeon.id) : undefined;
 
@@ -162,7 +164,7 @@
           // UI specific
           self.deleteDungeonUI(deletedDungeon.id);
         }
-        
+
         treatDungeons(--index);
       }
 
@@ -170,7 +172,9 @@
     },
     deleteDungeonUI: function (dungeonId) {
       var dungeonUI = document.getElementById(dungeonId);
+      var dungeonUIPreview = document.getElementById('preview-' + dungeonId);
       document.getElementsByTagName('main')[0].removeChild(dungeonUI);
+      document.getElementById('dungeon-preview').removeChild(dungeonUIPreview);
     },
     applyOptionEvent: function (event) {
       var selectedSquare = event.target;
@@ -202,6 +206,7 @@
       var dungeonName = createUIElement('h1', {
         class: 'dungeon-name',
       });
+      dungeonName.innerHTML = dungeon.id;
       var area = createUIElement('div', {
         class: 'area',
       });
@@ -260,6 +265,42 @@
 
       document.getElementsByTagName('main')[0].appendChild(areaContainer);
 
+      // creating dungeon preview
+      var previewContainer = createUIElement('div', {
+        class: 'dungeon-preview-container',
+        id: 'preview-' + dungeon.id,
+        'data-dungeon-id': dungeon.id,
+      });
+      var previewLifeContainer = createUIElement('div', {
+        class: 'life-container',
+      });
+      var previewLifeBar = createUIElement('div', {
+        class: 'life-bar',
+      });
+      var previewLifeCount = createUIElement('p', {
+        class: 'life-count',
+      });
+      var previewMoneyCount = createUIElement('p', {
+        class: 'money-count',
+      });
+      var previewDungeonName = createUIElement('p', {
+        class: 'dungeon-name',
+      });
+      previewDungeonName.innerHTML = dungeon.id;
+
+      previewLifeContainer.appendChild(previewLifeBar);
+      previewLifeContainer.appendChild(previewLifeCount);
+      previewLifeContainer.appendChild(previewMoneyCount);
+
+      previewContainer.appendChild(previewDungeonName);
+      previewContainer.appendChild(previewLifeContainer);
+
+      uiDungeon.previewLifeBar = previewLifeBar;
+      uiDungeon.previewLifeCount = previewLifeCount;
+      uiDungeon.previewMoneyCount = previewMoneyCount;
+
+      document.getElementById('dungeon-preview').appendChild(previewContainer);
+
       // map the element to the uiDungeon
       uiDungeon.lifeBar = lifeBar;
       uiDungeon.lifeCount = lifeCount;
@@ -275,12 +316,17 @@
         applyStyleOn(self.dungeonsUI[index].lifeBar, {
           height: dungeon.life + '%',
         });
+        applyStyleOn(self.dungeonsUI[index].previewLifeBar, {
+          width: dungeon.life + '%',
+        });
 
         // update life count
         dungeonUI.lifeCount.innerHTML = dungeon.life;
+        dungeonUI.previewLifeCount.innerHTML = dungeon.life;
 
         // update money count
         dungeonUI.moneyCount.innerHTML = dungeon.money;
+        dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
 
         // ready button
         var otherUi = find(self.dungeonsUI, dungeon.id);
@@ -308,6 +354,56 @@
 
   /* -------- End ClientController Class -------- */
 
+  var adversaries = [];
+  var adversariesPreview = [];
+  var adversaryIndex = 0;
+
+  function updatePreview() {}
+
+  function selectAdversary(index) {
+    if (adversaries.length < controller.game.dungeons.length - 1) {
+      adversaries = Array.prototype.slice.apply(document.querySelectorAll('main .area-container:not(:first-child)'));
+      adversariesPreview = Array.prototype.slice.apply(document.querySelectorAll('#dungeon-preview .dungeon-preview-container:not(:first-child)'));
+      adversariesPreview.forEach(function (preview, ind) {
+        on(preview, 'click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          selectAdversary(ind);
+        });
+      });
+    }
+    adversaries.forEach(function (adversary, ind) {
+      if (index !== ind) {
+        adversary.classList.remove('selected');
+        adversariesPreview[ind].classList.remove('selected');
+      } else {
+        adversary.classList.add('selected');
+        adversariesPreview[ind].classList.add('selected');
+      }
+    });
+  }
+
+  function navigateThroughAdversaries(event) {
+    if (adversaries.length < controller.game.dungeons.length - 1) {
+      adversaries = Array.prototype.slice.apply(document.querySelectorAll('main .area-container:not(:first-child)'));
+      adversariesPreview = Array.prototype.slice.apply(document.querySelectorAll('#dungeon-preview .dungeon-preview-container:not(:first-child)'));
+      adversariesPreview.forEach(function (preview, ind) {
+        on(preview, 'click', function (event) {
+          event.stopPropagation();
+          event.preventDefault();
+          selectAdversary(ind);
+        });
+      })
+    }
+    if (event.deltaY < 0) {
+      adversaryIndex += 1;
+      adversaryIndex = adversaryIndex > adversaries.length - 1 ? 0 : adversaryIndex;
+    } else {
+      adversaryIndex -= 1;
+      adversaryIndex = adversaryIndex < 0 ? adversaries.length - 1 : adversaryIndex;
+    }
+    selectAdversary(adversaryIndex);
+  }
 
 
   var socket, //Socket.IO client
@@ -342,27 +438,49 @@
       toggle(startMenu, true);
       toggle(gamesList, true);
       if (controller.game.options.length) updateGameOptions(controller.game.options);
+      if (adversaries.length === 0) selectAdversary(0);
     });
 
     socket.on("error", function () {});
 
     socket.on('game-lost', function (data) {
-      alert(data.message);
-      socket.disconnect(false);
+      var message = '';
+      if (data.dungeonId === socket.id) {
+        message = 'You Lost';
+        alert(message);
+        socket.disconnect(false);
+        window.location.reload(true);
+      } else {
+        message = data.dungeonId + ' lost the game';
+        alert(message);
+      }
     });
+
+    window.addEventListener('wheel', navigateThroughAdversaries);
 
     var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
 
     // add events to button based on id
 
     buttons.forEach(function (button) {
+      var halfXScreen = window.innerWidth / 2;
+      var width = (halfXScreen * 80) / 100;
+      var height = (window.innerHeight * 80) / 100;
       on(button, 'click', function () {
         switch (button.id) {
           case 'join-game':
-            socket.emit(button.id, selectedGameId);
+            socket.emit(button.id, {
+              gameId: selectedGameId,
+              areaWidth: width,
+              areaHeight: height,
+            });
             break;
           default:
-            socket.emit(button.id, socket.id);
+            socket.emit(button.id, {
+              gameId: socket.id,
+              areaWidth: width,
+              areaHeight: height,
+            });
         }
       });
     });
@@ -389,11 +507,16 @@
       var key = event.keyCode;
       var direction;
       if (controller) {
-        
-        if      (key === 87 || key === 38) { direction = 'up'; }
-        else if (key === 40 || key === 83) { direction = 'down'; }
-        else if (key === 65 || key === 37) { direction = 'left'; }
-        else if (key === 68 || key === 39) { direction = 'right'; }
+
+        if (key === 87 || key === 38) {
+          direction = 'up';
+        } else if (key === 40 || key === 83) {
+          direction = 'down';
+        } else if (key === 65 || key === 37) {
+          direction = 'left';
+        } else if (key === 68 || key === 39) {
+          direction = 'right';
+        }
 
         if (direction) socket.emit('move-player', direction);
       }

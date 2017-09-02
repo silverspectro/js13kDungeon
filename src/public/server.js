@@ -22,23 +22,30 @@ var MAX_CLOCK_TIME = 60 * 30;
  * @TODO : remove controller if socket closed
  */
 function ServerController(socket, options) {
+  this.id = socket.id;
   this.game = new Game(socket, options);
-  this.clock = setInterval(this.checkClock.bind(this), 1000);
 }
 
 ServerController.prototype = {
+  start: function () {
+    if (this.game.checkReady()) {
+      this.clock = setInterval(this.checkClock.bind(this), 1000);
+      return true;
+    }
+    return false;
+  },
+  destroy: function () {
+    clearInterval(this.clock);
+  },
   checkClock: function () {
-    
-    this.game.checkReady();
-
-    if (!this.game.started) return;
-
     // check if a timer exceed the max time
     // just in case to not overload the server in case
     // a 'disconnect' event get lost
     if (this.game.time > MAX_CLOCK_TIME) {
       clearInterval(this.clock);
-      broadcast(this.game, 'game-lost', { message: "Lost - OUT OF TIME", });
+      broadcast(this.game, 'game-lost', {
+        message: "Lost - OUT OF TIME",
+      });
     }
 
     this.reduceLifeOnClock(this.game.time);
@@ -58,10 +65,11 @@ ServerController.prototype = {
         dungeon.modifiers.timeLimitMalus = 0;
       }
       if (dungeon.life <= 0 && !dungeon.player.lost) {
-        self.game.room.to(dungeon.id).emit('game-lost', {
+        broadcast(self.game, 'game-lost', {
+          dungeonId: dungeon.id,
           message: "Lost - OUT OF TIME",
         });
-        dungeon.play.lost = true;
+        dungeon.player.lost = true;
       }
     });
   }
@@ -70,33 +78,33 @@ ServerController.prototype = {
 /* -------- End ServerController Class -------- */
 
 
-/* -------- Games Sessions -------- */
+/* -------- controllers Sessions -------- */
 
 /**
- * Games sessions
- * @param {array} Games
+ * controllers sessions
+ * @param {array} controllers
  */
-var games = [];
+var controllers = [];
 
 /**
  * List Rooms for UI and selection
  */
 function listRooms() {
-  return games.map(function (game) {
-    return game.toJSON();
+  return controllers.map(function (controller) {
+    return controller.game.toJSON();
   });
 }
 
 function findByDungeonId(id) {
-  for (var i = 0; i < games.length; i++) {
-    for (var x = 0; x < games[i].dungeons.length; x++) {
-      if (games[i].dungeons[x].id === id) return games[i];
+  for (var i = 0; i < controllers.length; i++) {
+    for (var x = 0; x < controllers[i].game.dungeons.length; x++) {
+      if (controllers[i].game.dungeons[x].id === id) return controllers[i];
     }
   }
   return undefined;
 }
 
-/* -------- End Games Sessions -------- */
+/* -------- End controllers Sessions -------- */
 
 /* -------- Dungeon Class -------- */
 
@@ -138,12 +146,12 @@ Dungeon.prototype = {
   init: function () {
     var self = this;
 
-    this.createArea();
-
-    this.socket.on('new-game', function () {
-      var controller = new ServerController(self.socket);
-      games.push(controller.game);
-      var game = find(games, self.socket.id);
+    this.socket.on('new-game', function (payload) {
+      var newController = new ServerController(self.socket);
+      controllers.push(newController);
+      var controller = find(controllers, self.socket.id);
+      var game = controller ? controller.game : undefined;
+      self.createArea(payload.areaWidth, payload.areaHeight);
       game.addDungeon(self);
       self.socket.emit('game-created', game.toJSON());
     });
@@ -153,13 +161,17 @@ Dungeon.prototype = {
     });
 
     this.socket.on("disconnect", function () {
-      var game = find(games, self.socket.id);
-      if (self) game = game || findByDungeonId(self.socket.id);
+      var controller = find(controllers, self.socket.id);
+      if (!controller) {
+        controller = controller || findByDungeonId(self.socket.id);
+      }
+      var game = controller ? controller.game : undefined;
       if (game) {
         game.removeDungeon(self.socket.id);
         if (game.dungeons.length === 0) {
-          game.destroy();
-          remove(games, findIndex(games, game.id));
+          controller.destroy();
+          remove(controllers, findIndex(controllers, game.id));
+          console.log("Deleted: " + game.id);
         } else {
           game.removeDungeon(self.socket.id);
           broadcast(game, 'update', game.toJSON());
@@ -168,33 +180,44 @@ Dungeon.prototype = {
       console.log("Disconnected: " + self.socket.id);
     });
 
-    this.socket.on('join-game', function (gameId) {
-      var game = find(games, gameId);
-      if (game) self.joinRoom(game);
+    this.socket.on('join-game', function (payload) {
+      var controller = find(controllers, payload.gameId);
+      var game = controller ? controller.game : undefined;
+      self.createArea(payload.areaWidth, payload.areaHeight);
+      if (game && !game.started) self.joinRoom(game);
     });
 
     this.socket.on('move-player', function (direction) {
-      self.movePlayer(direction);
-      var game = findByDungeonId(self.id);
-      self.lastUpdateTime = 0;
-      broadcast(game, 'update', game.toJSON());
+      var controller = findByDungeonId(self.id);
+      var game = controller ? controller.game : undefined;
+      if (game && game.started) {
+        self.movePlayer(direction);
+        self.lastUpdateTime = 0;
+        broadcast(game, 'update', game.toJSON());
+      }
     });
 
     this.socket.on('apply-option', function (data) {
-      var game = findByDungeonId(data.dungeonId);
-      var dungeon = find(game.dungeons, data.dungeonId);
-      var opponent = find(game.dungeons, data.opponentId);
-      if (opponent.id !== dungeon.id) opponent.deduceMoney(data.x, data.y, data.option.trim(), dungeon);
-      dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
-      broadcast(game, 'update', game.toJSON());
+      var controller = findByDungeonId(data.dungeonId);
+      var game = controller ? controller.game : undefined;
+      if (game && game.started) {
+        var dungeon = find(game.dungeons, data.dungeonId);
+        var opponent = find(game.dungeons, data.opponentId);
+        if (opponent.id !== dungeon.id) opponent.deduceMoney(data.x, data.y, data.option.trim(), dungeon);
+        dungeon.applyOption(data.x, data.y, data.option.trim(), opponent);
+        broadcast(game, 'update', game.toJSON());
+      }
     });
 
     this.socket.on('ready', function (dungeonId) {
-      var game = findByDungeonId(dungeonId);
-      var dungeon = find(game.dungeons, dungeonId);
-      dungeon.player.ready = !dungeon.player.ready;
-      // game.checkReady();
-      broadcast(game, 'update', game.toJSON());
+      var controller = findByDungeonId(dungeonId);
+      var game = controller ? controller.game : undefined;
+      if (game && !game.started) {
+        var dungeon = find(game.dungeons, dungeonId);
+        dungeon.player.ready = !dungeon.player.ready;
+        controller.start();
+        broadcast(game, 'update', game.toJSON());
+      }
     });
 
   },
@@ -211,7 +234,7 @@ Dungeon.prototype = {
         }
       case 'trap':
         {
-          if (this.area[x][y].state.includes('player') &&
+          if (this.area[x][y].state === 'square' &&
             bully.money >= this.config.trapCost &&
             this.id !== bully.id) {
             this.player.trapped = true;
@@ -233,7 +256,7 @@ Dungeon.prototype = {
         }
       case 'trap':
         {
-          if (victim.area[x][y].state.includes('player') && !victim.area[x][y].state.includes('trap')) {
+          if (victim.area[x][y].state === 'square') {
             if (this.money >= this.config.trapCost) moneyToDeduce += this.config.trapCost;
           }
           break;
@@ -251,10 +274,15 @@ Dungeon.prototype = {
           movementValue += (squareY - 1) >= 0 ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY - movementValue][squareX].state.includes('wall')) {
-              this.area[squareY - movementValue][squareX].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.y -= movementValue;
-              this.life--;
+              if (this.area[squareY - movementValue][squareX].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY - movementValue][squareX].state = 'square';
+              } else {
+                this.area[squareY - movementValue][squareX].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.y -= movementValue;
+                this.life--;
+              }
             }
           }
           break;
@@ -264,10 +292,15 @@ Dungeon.prototype = {
           movementValue += (squareY + 1) < this.area.length ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY + movementValue][squareX].state.includes('wall')) {
-              this.area[squareY + movementValue][squareX].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.y += movementValue;
-              this.life--;
+              if (this.area[squareY + movementValue][squareX].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY + movementValue][squareX].state = 'square';
+              } else {
+                this.area[squareY + movementValue][squareX].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.y += movementValue;
+                this.life--;
+              }
             }
           }
           break;
@@ -277,10 +310,15 @@ Dungeon.prototype = {
           movementValue += (squareX - 1) >= 0 ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY][squareX - movementValue].state.includes('wall')) {
-              this.area[squareY][squareX - movementValue].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.x -= movementValue;
-              this.life--;
+              if (this.area[squareY][squareX - movementValue].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY][squareX - movementValue].state = 'square';
+              } else {
+                this.area[squareY][squareX - movementValue].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.x -= movementValue;
+                this.life--;
+              }
             }
           }
           break;
@@ -290,16 +328,20 @@ Dungeon.prototype = {
           movementValue += (squareX + 1) < this.area[0].length ? 1 : 0;
           if (movementValue > 0) {
             if (!this.area[squareY][squareX + movementValue].state.includes('wall')) {
-              this.area[squareY][squareX + movementValue].state = 'square player';
-              this.area[squareY][squareX].state = 'square';
-              this.player.x += movementValue;
-              this.life--;
+              if (this.area[squareY][squareX + movementValue].state.includes('trap')) {
+                this.applyTrap(direction);
+                this.area[squareY][squareX + movementValue].state = 'square';
+              } else {
+                this.area[squareY][squareX + movementValue].state = 'square player';
+                this.area[squareY][squareX].state = 'square';
+                this.player.x += movementValue;
+                this.life--;
+              }
             }
           }
           break;
         }
     }
-    this.applyTrap(direction);
   },
   applyTrap: function (direction) {
     if (this.player.trapped) {
@@ -316,6 +358,7 @@ Dungeon.prototype = {
                   this.area[squareY + movementValue][squareX].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.y += movementValue;
+                  this.life--;
                 }
               }
               break;
@@ -328,6 +371,7 @@ Dungeon.prototype = {
                   this.area[squareY - movementValue][squareX].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.y -= movementValue;
+                  this.life--;
                 }
               }
               break;
@@ -340,6 +384,7 @@ Dungeon.prototype = {
                   this.area[squareY][squareX + movementValue].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.x += movementValue;
+                  this.life--;
                 }
               }
               break;
@@ -352,13 +397,13 @@ Dungeon.prototype = {
                   this.area[squareY][squareX - movementValue].state = 'square player';
                   this.area[squareY][squareX].state = 'square';
                   this.player.x -= movementValue;
+                  this.life--;
                 }
               }
               break;
             }
         }
       }
-      this.player.trapped = false;
     }
   },
   toJSON: function () {
@@ -374,16 +419,16 @@ Dungeon.prototype = {
     };
   },
   createArea: function (x, y, numberOfCells) {
-    x = x || 300;
-    y = y || 400;
-    numberOfCells = numberOfCells || 30;
-
+    this.area = [];
+    x = typeof x === 'undefined' ? 800 : x;
+    y = typeof y === 'undefined' ? 600 : y;
+    numberOfCells = typeof numberOfCell === 'undefined' ? 30 : numberOfcell;
     var cellSize = x / numberOfCells;
-    var rows = Math.floor(y / cellSize);
+    var rows = (y - (y % cellSize)) / cellSize;
 
     for (var row = 0; row < rows; row++) {
       this.area.push([]);
-      for (var column = numberOfCells; column > 0; column--) {
+      for (var column = 0; column < numberOfCells; column++) {
         this.area[row].push({
           style: {
             width: cellSize + 'px',
@@ -398,6 +443,7 @@ Dungeon.prototype = {
       y: 0,
       trapped: false,
       ready: false,
+      lost: false,
     };
     this.area[this.player.y][this.player.x].state = squareStates['p'];
   },
