@@ -288,40 +288,50 @@ nav ul li {
 .area {
   position: absolute;
   display: table;
-
-  
   left: 10%;
   top: 0;
-  border-left: 1px black solid;
-  border-top: 1px black solid;
+  border: 1px black solid;
 }
 
-.area .table-row{
-  display: table-row;
+.row {
+  line-height: 0px;
 }
 
 .square {
   position: relative;
-  display: table-cell;
-  border-right: 1px solid #000;
-  border-bottom: 1px solid #000;
+  display: inline-block;
+  border-right: 1px solid #C3BFBF;
+  border-bottom: 1px solid #C3BFBF;
   box-sizing: border-box;
   cursor: pointer;
-  transition: background-color 0.3s;
+  background-color: #e0e0e0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.square.bg1 {
+  background-image: url('rock1.gif');
+}
+
+.square.bg2 {
+  background-image: url('rock2.gif');
+}
+
+.square.bg3 {
+  background-image: url('rock3.gif');
+}
+
+.square.bg4 {
+  background-image: url('rock4.gif');
 }
 
 .square.player {
-  background-color: black;
+  background-image: url('player.gif')!important;
 }
 
-.square.wall::before {
-  content: ' ';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  background-color: grey;
+.square.wall {
+  background-image: url('wall.gif')!important;
 }
 
 .area-container:first-child .square.trap::after {
@@ -331,13 +341,46 @@ nav ul li {
 .square.trap::after {
   position: absolute;
   content: ' ';
-  width: 80%;
-  height: 80%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: red;
-  z-index: 10;
-  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('trap.gif')!important;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.life::after {
+  position: absolute;
+  content: ' ';
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('life.gif');
+  background-size: cover;
+}
+
+.rhum::after {
+  position: absolute;
+  content: ' ';
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('rhum.gif');
+  background-position: center;
+}
+
+.money::after {
+  position: absolute;
+  content: ' ';
+  width: 100%;
+  height: 100%;
+  top: 0%;
+  left: 0%;
+  background-image: url('money.gif');
+  background-repeat: no-repeat;
 }
 
