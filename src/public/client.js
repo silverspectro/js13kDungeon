@@ -121,7 +121,16 @@
   function ClientController(socket, options) {
     this.game = new Game(socket, options);
     this.dungeonsUI = [];
+    this.adversaries = [];
+    this.adversariesPreview = [];
+    this.adversaryIndex = 0;
     this.selectedOption = "";
+
+    var self = this;
+
+    window.addEventListener('wheel', function(event) {
+      self.navigateThroughAdversaries(event);
+    });
   }
 
   ClientController.prototype = {
@@ -129,6 +138,28 @@
       this.game.options = game.options;
       this.updateDungeons(game.dungeons);
       this.updateUI();
+    },
+    selectAdversary: function(index) {
+      var self = this;
+      this.adversaries.forEach(function (adversary, ind) {
+        if (index !== ind) {
+          adversary.classList.remove('selected');
+          self.adversariesPreview[ind].classList.remove('selected');
+        } else {
+          adversary.classList.add('selected');
+          self.adversariesPreview[ind].classList.add('selected');
+        }
+      });
+    },
+    navigateThroughAdversaries: function(event) {
+      if (event.deltaY < 0) {
+        this.adversaryIndex += 1;
+        this.adversaryIndex = this.adversaryIndex > this.adversaries.length - 1 ? 0 : this.adversaryIndex;
+      } else {
+        this.adversaryIndex -= 1;
+        this.adversaryIndex = this.adversaryIndex < 0 ? this.adversaries.length - 1 : this.adversaryIndex;
+      }
+      this.selectAdversary(this.adversaryIndex);
     },
     updateDungeons: function (dungeons) {
 
@@ -172,7 +203,11 @@
     },
     deleteDungeonUI: function (dungeonId) {
       var dungeonUI = document.getElementById(dungeonId);
+      var adversaryIndex = this.adversaries.indexOf(dungeonUI);
       var dungeonUIPreview = document.getElementById('preview-' + dungeonId);
+      var adversaryPreviewIndex = this.adversariesPreview.indexOf(dungeonUIPreview);
+      this.adversaries.splice(adversaryIndex, 1);
+      this.adversariesPreview.splice(adversaryPreviewIndex, 1);
       document.getElementsByTagName('main')[0].removeChild(dungeonUI);
       document.getElementById('dungeon-preview').removeChild(dungeonUIPreview);
     },
@@ -307,6 +342,20 @@
       uiDungeon.moneyCount = moneyCount;
       uiDungeon.readyButton = readyButton;
       this.dungeonsUI.push(uiDungeon);
+
+      if (this.dungeonsUI.length > 1) {
+        this.adversaries.push(areaContainer);
+        this.adversariesPreview.push(previewContainer);
+
+        var ind = this.adversariesPreview.length - 1;
+
+        on(previewContainer, 'click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          self.selectAdversary(ind);
+        });
+      }
+      
     },
     updateUI: function () {
       var self = this;
@@ -354,57 +403,6 @@
 
   /* -------- End ClientController Class -------- */
 
-  var adversaries = [];
-  var adversariesPreview = [];
-  var adversaryIndex = 0;
-
-  function updatePreview() {}
-
-  function selectAdversary(index) {
-    if (adversaries.length < controller.game.dungeons.length - 1) {
-      adversaries = Array.prototype.slice.apply(document.querySelectorAll('main .area-container:not(:first-child)'));
-      adversariesPreview = Array.prototype.slice.apply(document.querySelectorAll('#dungeon-preview .dungeon-preview-container:not(:first-child)'));
-      adversariesPreview.forEach(function (preview, ind) {
-        on(preview, 'click', function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          selectAdversary(ind);
-        });
-      });
-    }
-    adversaries.forEach(function (adversary, ind) {
-      if (index !== ind) {
-        adversary.classList.remove('selected');
-        adversariesPreview[ind].classList.remove('selected');
-      } else {
-        adversary.classList.add('selected');
-        adversariesPreview[ind].classList.add('selected');
-      }
-    });
-  }
-
-  function navigateThroughAdversaries(event) {
-    if (adversaries.length < controller.game.dungeons.length - 1) {
-      adversaries = Array.prototype.slice.apply(document.querySelectorAll('main .area-container:not(:first-child)'));
-      adversariesPreview = Array.prototype.slice.apply(document.querySelectorAll('#dungeon-preview .dungeon-preview-container:not(:first-child)'));
-      adversariesPreview.forEach(function (preview, ind) {
-        on(preview, 'click', function (event) {
-          event.stopPropagation();
-          event.preventDefault();
-          selectAdversary(ind);
-        });
-      })
-    }
-    if (event.deltaY < 0) {
-      adversaryIndex += 1;
-      adversaryIndex = adversaryIndex > adversaries.length - 1 ? 0 : adversaryIndex;
-    } else {
-      adversaryIndex -= 1;
-      adversaryIndex = adversaryIndex < 0 ? adversaries.length - 1 : adversaryIndex;
-    }
-    selectAdversary(adversaryIndex);
-  }
-
 
   var socket, //Socket.IO client
       controller,
@@ -438,7 +436,7 @@
       toggle(startMenu, true);
       toggle(gamesList, true);
       if (controller.game.options.length) updateGameOptions(controller.game.options);
-      if (adversaries.length === 0) selectAdversary(0);
+      if (controller.adversaries.length === 0) controller.selectAdversary(0);
     });
 
     socket.on("error", function () {});
@@ -455,8 +453,6 @@
         alert(message);
       }
     });
-
-    window.addEventListener('wheel', navigateThroughAdversaries);
 
     var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
 
