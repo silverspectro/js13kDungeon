@@ -154,8 +154,7 @@ function Dungeon(socket, config) {
     timeLimit: config.timeLimit || 10,
     timeLimitMalus: config.timeLimitMalus || 1,
     bonusInterval: config.bonusInterval || 5,
-    lifeBonusValue: config.lifeBonusValue || 10,
-    rhumBonusValue: config.rhumBonusValue || 30,
+    rhumBonusValue: config.rhumBonusValue || 10,
     moneyBonusValue: config.moneyBonusValue || 15,
   };
 
@@ -268,6 +267,9 @@ Dungeon.prototype = {
       if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL)
         || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) ) {
         this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
+        return true;
+      } else if ( (requestedState & STATE_DYNAMITE) && (originalState & STATE_WALL) ) {
+        this.area.setState(x, y, originalState & STATE_DEFAULT);
         return true;
       }
     } else {
