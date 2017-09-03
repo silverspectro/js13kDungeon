@@ -103,7 +103,7 @@
       selectedGameId;
 
   function updateGameListUI() {
-    var listArray = Array.prototype.slice.apply(gamesUl.children);
+    var listArray = Array.apply(null, gamesUl.children);
     listArray.forEach(function (li) {
       if (li.getAttribute('data-game-id') === selectedGameId) li.classList.add('selected')
       else li.classList.remove('selected');
@@ -128,7 +128,7 @@
   }
 
   function updateGameOptionsSelected() {
-    var optionButtons = Array.prototype.slice.apply(optionListUl.getElementsByTagName('button'));
+    var optionButtons = Array.apply(null, optionListUl.getElementsByTagName('button'));
 
     optionButtons.forEach(function (button) {
       var state = button.getAttribute('data-option-index');
@@ -516,8 +516,9 @@
       }
     });
 
-    var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
-    // @TODO treat this as an option 
+    var buttons = Array.apply(null, document.getElementsByTagName('button'));
+
+    // @TODO should be editable by game owner.
     var areaColumns = 11;
     var areaRows = 15;
 
