@@ -148,8 +148,8 @@ function Dungeon(socket, config) {
 
   config = config || {};
   this.config = {
-    trapFeedback: config.trapFeedback || 3,
-    trapCost: config.trapCost || 15,
+    dynamiteFeedback: config.dynamiteFeedback || 3,
+    dynamiteCost: config.dynamiteCost || 15,
     wallCost: config.wallCost || 5,
     timeLimit: config.timeLimit || 10,
     timeLimitMalus: config.timeLimitMalus || 1,
@@ -267,14 +267,14 @@ Dungeon.prototype = {
     if(this.id === bullyDungeon.id) {
       if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL)
         || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) ) {
-        this.area.setState(x, y, (originalState & STATE_TRAP) | requestedState);
+        this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
         return true;
       }
     } else {
       if( (requestedState & STATE_WALL) && !(originalState & (STATE_WALL | STATE_PLAYER)) && (bullyDungeon.money >= this.config.wallCost) ) {
         this.area.setState(x, y, requestedState);
         return true;
-      } else if ( (requestedState & STATE_TRAP) && !(originalState & (STATE_WALL | STATE_TRAP | STATE_PLAYER)) && (bullyDungeon.money >= this.config.trapCost) ) {
+      } else if ( (requestedState & STATE_DYNAMITE) && !(originalState & (STATE_WALL | STATE_DYNAMITE | STATE_PLAYER)) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
         this.area.setState(x, y, originalState | requestedState);
         return true;
       }
@@ -287,8 +287,8 @@ Dungeon.prototype = {
     /// @TODO make a global cell state object to centralize label, cost, etc.
     if (requestedState & STATE_WALL) {
       this.money -= this.config.wallCost;
-    } else if (requestedState & STATE_TRAP) {
-      this.money -= this.config.trapCost;
+    } else if (requestedState & STATE_DYNAMITE) {
+      this.money -= this.config.dynamiteCost;
     }
   },
   movePlayer: function (direction) {
@@ -345,7 +345,7 @@ Dungeon.prototype = {
 
 
     // apply requested cell
-    if( requestedPositionState & STATE_TRAP ) {
+    if( requestedPositionState & STATE_DYNAMITE ) {
       this.applyTrap(direction);
     }
 
@@ -374,7 +374,7 @@ Dungeon.prototype = {
         console.log("Error can't move " + direction);
     }
 
-    for (var i = 0; i <= this.config.trapFeedback; i++) {
+    for (var i = 0; i <= this.config.dynamiteFeedback; i++) {
       this.movePlayer(oppositeDirection);
     }
   },

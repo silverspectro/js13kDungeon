@@ -57,6 +57,13 @@ html, body, body * {
   }
 }
 
+#option-list ul {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+}
+
 button:focus {
   border: none;
   outline: none;
@@ -385,11 +392,11 @@ nav ul li {
   background-image: url('wall.gif');
 }
 
-.area-container:first-child .square.trap::after {
+.area-container:first-child .square.dynamite::before {
   display: none;
 }
 
-.square.trap::before {
+.square.dynamite::before {
   position: absolute;
   content: ' ';
   width: 100%;

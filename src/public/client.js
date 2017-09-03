@@ -39,7 +39,7 @@
 
     if( state & STATE_PLAYER ) { cssClass += " player"; }
     if( state & STATE_WALL ) { cssClass += " wall"; }
-    if( state & STATE_TRAP ) { cssClass += " trap"; }
+    if( state & STATE_DYNAMITE ) { cssClass += " dynamite"; }
     if( state & STATE_MONEY ) { cssClass += " money"; }
     if( state & STATE_RHUM ) { cssClass += " rhum"; }
     
@@ -51,7 +51,7 @@
    * @param {Int} state 
    */
   function getStateLabel(state) {
-    if( state & STATE_TRAP ) return "Trap";
+    if( state & STATE_DYNAMITE ) return "Dynamite";
     if( state & STATE_WALL ) return "Wall";
   }
 
@@ -574,6 +574,8 @@
       }
     });
 
+    var timeout;
+
     // add keyboard events
     window.addEventListener('keydown', function (event) {
       var key = event.keyCode;
@@ -588,11 +590,16 @@
           else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
   
           if (direction) socket.emit('move-player', direction);
-          window.setTimeout(function (){
+          timeout = window.setTimeout(function (){
             controller.keypressed = false;
           }, 200);
         }
       }
+    });
+
+    window.addEventListener('keyup', function() {
+      clearInterval(timeout);
+      controller.keypressed = false;
     });
   }
 

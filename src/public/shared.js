@@ -5,7 +5,7 @@
 var STATE_DEFAULT  = 1;   // 0x 00000001
 var STATE_PLAYER   = 2;   // 0x 00000010
 var STATE_WALL     = 4;   // 0x 00000100
-var STATE_TRAP     = 8;   // 0x 00001000
+var STATE_DYNAMITE = 8;   // 0x 00001000
 var STATE_RHUM     = 16;  // 0x 00100000
 var STATE_MONEY    = 32;  // 0x 01000000
 
@@ -110,7 +110,7 @@ function Game(socket, options) {
   this.time = 0;
   this.options = options || [
     STATE_WALL,
-    STATE_TRAP,
+    STATE_DYNAMITE,
   ];
 }
 
