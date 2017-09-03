@@ -59,6 +59,13 @@ html, body {
   }
 }
 
+#option-list ul {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+}
+
 button:focus {
   outline: none;
 }
@@ -291,7 +298,7 @@ nav ul li {
   border-bottom: 1px solid #C3BFBF;
   cursor: pointer;
   background-color: #e0e0e0;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }
@@ -306,10 +313,6 @@ nav ul li {
 
 .square.bg3 {
   background-image: url('rock3.gif');
-}
-
-.square.bg4 {
-  background-image: url('rock4.gif');
 }
 
 .square.player {
@@ -332,16 +335,12 @@ nav ul li {
   background-repeat: no-repeat;
 }
 
-.square.trap::before {
-  background-image: url('trap.gif');
+.dynamite::before {
+  background-image: url('dynamite.gif');
 }
 
-#my-dungeon .trap::before {
+#my-dungeon .dynamite::before {
   display: none;
-}
-
-.life::after {
-  background-image: url('life.gif');
 }
 
 .rhum::after {
@@ -350,5 +349,24 @@ nav ul li {
 
 .money::after {
   background-image: url('money.gif');
+}
+
+.icon {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  margin-left: 0.3em;
+  vertical-align: bottom;
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}
+
+.icon.money {
+  background-image: url('money.gif');
+}
+
+.icon.money:after {
+  content: none;
 }
 

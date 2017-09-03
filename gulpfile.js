@@ -7,6 +7,7 @@ const nodemon = require('gulp-nodemon');
 const zip = require('gulp-zip');
 const fs = require('fs');
 const chalk = require('chalk');
+const del = require('del');
 const watch = require('gulp-watch');
 
 //Chalk colors
@@ -65,13 +66,19 @@ gulp.task('check', gulp.series('zip', (done) => {
 	done();
 }));
 
-gulp.task('build', gulp.series('build-html', 'build-js', 'build-css', 'copy-assets', 'check', (done) => {
+gulp.task('clean:build', () => {
+  return del([
+    'public/**/*',
+  ]);
+})
+
+gulp.task('build', gulp.series('clean:build', 'build-html', 'build-js', 'build-css', 'copy-assets', 'check', (done) => {
 	done();
 }));
 
-gulp.task('watch', (done) => {
-	gulp.watch('./src/public/*.js', gulp.series('build-js', 'zip', 'check'));
-	gulp.watch('./src/public/*.html', gulp.series('build-html', 'check'));
+gulp.task('watch', gulp.series('build', (done) => {
+  gulp.watch('./src/public/*.js', gulp.series('build-js', 'zip', 'check'));
+  gulp.watch('./src/public/*.html', gulp.series('build-html', 'check'));
   gulp.watch('./src/public/*.css', gulp.series('build-css', 'check'));
   gulp.watch('./src/public/assets/*', gulp.series('copy-assets', 'check'));
-});
+}));

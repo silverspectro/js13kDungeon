@@ -24,8 +24,8 @@
   var randomBGMap = [];
 
   function randomiseSquare() {
-    var random = Math.floor(Math.random() * 4);
-    return random > 0 ? ' bg' + random : '';
+    var random = Math.floor(Math.random() * 8);
+    return random > 0 && random <= 3 ? ' bg' + random : ''; // 3 backgrounds defined, cf. css
   }
 
   /**
@@ -39,9 +39,8 @@
 
     if( state & STATE_PLAYER ) { cssClass += " player"; }
     if( state & STATE_WALL ) { cssClass += " wall"; }
-    if( state & STATE_TRAP ) { cssClass += " trap"; }
+    if( state & STATE_DYNAMITE ) { cssClass += " dynamite"; }
     if( state & STATE_MONEY ) { cssClass += " money"; }
-    if( state & STATE_LIFE ) { cssClass += " life"; }
     if( state & STATE_RHUM ) { cssClass += " rhum"; }
     
     return cssClass;
@@ -52,7 +51,7 @@
    * @param {Int} state 
    */
   function getStateLabel(state) {
-    if( state & STATE_TRAP ) return "Trap";
+    if( state & STATE_DYNAMITE ) return "Dynamite";
     if( state & STATE_WALL ) return "Wall";
   }
 
@@ -146,7 +145,7 @@
     updateGameOptionsSelected();
   }
 
-  function updateGameOptions(options) {
+  function updateGameOptions(options, config) {
 
     if(options.length <= 0) {
       throw new Error('Invalid option list for controll.')
@@ -164,7 +163,8 @@
         { 'data-option-index': option, },
         { click: selectOption, }
       );
-      button.innerHTML = getStateLabel(option);
+      var stateName = getStateLabel(option);
+      button.innerHTML = stateName + ' ' + config[stateName.toLowerCase() + 'Cost'] + '<div class="icon money"></div>';
 
       li.appendChild(button);
       optionListUl.appendChild(li);
@@ -185,6 +185,7 @@
     this.adversaries = [];
     this.adversariesPreview = [];
     this.adversaryIndex = 0;
+    this.keypressed = false;
 
     var self = this;
 
@@ -324,7 +325,7 @@
           if (dungeonId === self.game.id) self.broadcast('ready', dungeonId);
         },
       });
-
+      
       // Create the area DOM squares
       // and associate it to the new uiDungeon
       // for update loop and performance
@@ -485,7 +486,7 @@
     socket.on("game-created", function (newGame) {
       controller = new ClientController(socket);
       controller.updateGame(newGame);
-      updateGameOptions(controller.game.options);
+      updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
       toggle(startMenu);
       optionList.classList.remove('off');
     });
@@ -497,7 +498,7 @@
       toggle(startMenu, true);
       toggle(gamesList, true);
       controller.selectAdversary(controller.adversaryIndex);
-      if (controller.game.options.length) updateGameOptions(controller.game.options);
+      if (controller.game.options.length) updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
     });
 
     socket.on("error", function () {});
@@ -517,8 +518,8 @@
 
     var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
     // @TODO treat this as an option 
-    var areaColumns = 19;
-    var areaRows = 23;
+    var areaColumns = 11;
+    var areaRows = 15;
 
     buttons.forEach(function (button) {
       on(button, 'click', function () {
@@ -563,18 +564,32 @@
       }
     });
 
+    var timeout;
+
     // add keyboard events
-    window.addEventListener('keyup', function (event) {
+    window.addEventListener('keydown', function (event) {
       var key = event.keyCode;
       var direction;
       if (controller) {
-        if      (key === 87 || key === 38) { direction = MOVE_UP; }
-        else if (key === 40 || key === 83) { direction = MOVE_DOWN; }
-        else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
-        else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
-
-        if (direction) socket.emit('move-player', direction);
+        if (!controller.keypressed) {
+          controller.keypressed = true;
+          
+          if      (key === 87 || key === 38) { direction = MOVE_UP; }
+          else if (key === 40 || key === 83) { direction = MOVE_DOWN; }
+          else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
+          else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
+  
+          if (direction) socket.emit('move-player', direction);
+          timeout = window.setTimeout(function (){
+            controller.keypressed = false;
+          }, 200);
+        }
       }
+    });
+
+    window.addEventListener('keyup', function() {
+      clearInterval(timeout);
+      controller.keypressed = false;
     });
   }
 

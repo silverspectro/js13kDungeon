@@ -60,7 +60,6 @@ ServerController.prototype = {
       var randX = Math.floor(Math.random() * parseInt(self.game.dungeons[0].area.columns, 10));
       var randY = Math.floor(Math.random() * parseInt(self.game.dungeons[0].area.rows, 10));
       if (time % parseInt(dungeon.config.bonusInterval, 10) === 0) {
-        console.log(time, parseInt(parseInt(dungeon.config.bonusInterval, 10)), time % parseInt(dungeon.config.bonusInterval, 10), dungeon.id);
         dungeon.applyState(randX, randY, randState, dungeon);
       };
     });
@@ -149,14 +148,13 @@ function Dungeon(socket, config) {
 
   config = config || {};
   this.config = {
-    trapFeedback: config.trapFeedback || 3,
-    trapCost: config.trapCost || 15,
+    dynamiteFeedback: config.dynamiteFeedback || 3,
+    dynamiteCost: config.dynamiteCost || 15,
     wallCost: config.wallCost || 5,
     timeLimit: config.timeLimit || 10,
     timeLimitMalus: config.timeLimitMalus || 1,
     bonusInterval: config.bonusInterval || 5,
-    lifeBonusValue: config.lifeBonusValue || 10,
-    rhumBonusValue: config.rhumBonusValue || 30,
+    rhumBonusValue: config.rhumBonusValue || 10,
     moneyBonusValue: config.moneyBonusValue || 15,
   };
 
@@ -267,16 +265,18 @@ Dungeon.prototype = {
 
     if(this.id === bullyDungeon.id) {
       if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL)
-        || (requestedState & STATE_LIFE) && !(originalState & STATE_WALL)
         || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) ) {
-        this.area.setState(x, y, (originalState & STATE_TRAP) | requestedState);
+        this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
+        return true;
+      } else if ( (requestedState & STATE_DYNAMITE) && (originalState & STATE_WALL) ) {
+        this.area.setState(x, y, originalState & STATE_DEFAULT);
         return true;
       }
     } else {
       if( (requestedState & STATE_WALL) && !(originalState & (STATE_WALL | STATE_PLAYER)) && (bullyDungeon.money >= this.config.wallCost) ) {
         this.area.setState(x, y, requestedState);
         return true;
-      } else if ( (requestedState & STATE_TRAP) && !(originalState & (STATE_WALL | STATE_TRAP | STATE_PLAYER)) && (bullyDungeon.money >= this.config.trapCost) ) {
+      } else if ( (requestedState & STATE_DYNAMITE) && !(originalState & (STATE_WALL | STATE_DYNAMITE | STATE_PLAYER)) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
         this.area.setState(x, y, originalState | requestedState);
         return true;
       }
@@ -289,8 +289,8 @@ Dungeon.prototype = {
     /// @TODO make a global cell state object to centralize label, cost, etc.
     if (requestedState & STATE_WALL) {
       this.money -= this.config.wallCost;
-    } else if (requestedState & STATE_TRAP) {
-      this.money -= this.config.trapCost;
+    } else if (requestedState & STATE_DYNAMITE) {
+      this.money -= this.config.dynamiteCost;
     }
   },
   movePlayer: function (direction) {
@@ -322,15 +322,9 @@ Dungeon.prototype = {
         console.log("Error can't move " + direction);
     }
     
-    // check forbidden movement
-    if( 
-      (requestedX < 0) ||
-      (requestedY < 0) ||
-      (requestedX >= this.area.columns) ||
-      (requestedY >= this.area.rows)
-    ) {
-      return;
-    }
+    // we check / transform requested position to allow crossing limits
+    requestedX = requestedX % this.area.columns + 1 ? requestedX % this.area.columns : this.area.columns - 1;
+    requestedY = requestedY % this.area.rows + 1 ? requestedY % this.area.rows : this.area.rows - 1;
 
     var requestedPositionState = this.area.getState(requestedX, requestedY);
     if(requestedPositionState & STATE_WALL) {
@@ -344,10 +338,6 @@ Dungeon.prototype = {
     this.player.y = requestedY;
     this.life--;
 
-    if( requestedPositionState & STATE_LIFE ) {
-      this.life += this.config.lifeBonusValue;
-    }
-
     if( requestedPositionState & STATE_RHUM ) {
       this.life += this.config.rhumBonusValue;
     }
@@ -358,7 +348,7 @@ Dungeon.prototype = {
 
 
     // apply requested cell
-    if( requestedPositionState & STATE_TRAP ) {
+    if( requestedPositionState & STATE_DYNAMITE ) {
       this.applyTrap(direction);
     }
 
@@ -387,7 +377,7 @@ Dungeon.prototype = {
         console.log("Error can't move " + direction);
     }
 
-    for (var i = 0; i <= this.config.trapFeedback; i++) {
+    for (var i = 0; i <= this.config.dynamiteFeedback; i++) {
       this.movePlayer(oppositeDirection);
     }
   },
