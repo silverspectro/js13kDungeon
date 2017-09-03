@@ -128,11 +128,6 @@ function findByDungeonId(id) {
 
 /* -------- Dungeon Class -------- */
 
-var squareStates = {
-  p: 'square player',
-  0: 'square',
-};
-
 /**
  * Dungeon Class
  * @param {id}
@@ -140,7 +135,7 @@ var squareStates = {
 function Dungeon(socket, config) {
 
   this.socket = socket;
-  this.id = this.socket.id;
+  this.id = socket.id;
   this.area = new Area();
   this.life = 100;
   this.money = 100;
@@ -148,6 +143,7 @@ function Dungeon(socket, config) {
 
   config = config || {};
   this.config = {
+    name: config.name || socket.id,
     dynamiteFeedback: config.dynamiteFeedback || 3,
     dynamiteCost: config.dynamiteCost || 15,
     wallCost: config.wallCost || 5,
@@ -169,20 +165,27 @@ Dungeon.prototype = {
   init: function () {
     var self = this;
 
-    this.socket.on('new-game', function (payload) {
-      var newController = new ServerController(self.socket);
-      controllers.push(newController);
-      var controller = find(controllers, self.socket.id);
-      var game = controller ? controller.game : undefined;
-      if(game) {
-        self.createArea(payload.areaColumns, payload.areaRows);
-        game.addDungeon(self);
-        self.socket.emit('game-created', game.toJSON());
-      }
+    this.socket.on('new-g', function (payload) {
+      var controller = findByDungeonId(self.id);
+
+      if(!controller) {
+        
+        // @TODO : add some type check from client input.
+        self.config.name = payload.name || self.id;
+        var columns = payload.areaColumns || 11;
+        var rows = payload.areaRows || 15;
+
+        self.createArea(columns, rows);
+        controller = new ServerController(self.socket);
+        controller.game.addDungeon(self);
+
+        controllers.push(controller);
+        self.socket.emit('game-created', controller.game.toJSON());
+      } // else, player is already in a game.
     });
 
-    this.socket.on('list-games', function () {
-      self.socket.emit("room-list", listRooms());
+    this.socket.on('refresh-gl', function () {
+      self.socket.emit("game-l", listRooms());
     });
 
     this.socket.on("disconnect", function () {
@@ -205,7 +208,7 @@ Dungeon.prototype = {
       console.log("Disconnected: " + self.socket.id);
     });
 
-    this.socket.on('join-game', function (payload) {
+    this.socket.on('join-g', function (payload) {
       var syncId = payload.gameId;
       var controller = find(controllers, syncId);
       var refGame = controller ? controller.game : undefined;
@@ -213,6 +216,7 @@ Dungeon.prototype = {
       if (refGame && !refGame.started) {
         var refDungeon = find(refGame.dungeons, syncId);
         if(refDungeon) {
+          self.config.name = payload.dungeonName || syncId;
           self.createArea(refDungeon.area.columns, refDungeon.area.rows);
           self.joinRoom(refGame);
         } else {
@@ -381,22 +385,10 @@ Dungeon.prototype = {
       this.movePlayer(oppositeDirection);
     }
   },
-  toJSON: function () {
-    return {
-      id: this.id,
-      area: this.area.toJSON(),
-      life: this.life,
-      money: this.money,
-      lastUpdateTime: this.lastUpdateTime,
-      player: this.player,
-      config: this.config,
-      modifiers: this.modifiers,
-    };
-  },
   createArea: function (columns, rows) {
     this.area.reset(columns, rows);
     
-    // set player position
+    // set player position, -1 is esthetic choice for placement if no middle cell 
     var playerXPos = Math.floor( (columns-1) / 2);
     var playerYPos = Math.floor( (rows-1) / 2);
 
@@ -414,18 +406,28 @@ Dungeon.prototype = {
     game.addDungeon(this);
     broadcast(game, 'update', game.toJSON());
     console.log(this.socket.id + " has joined: " + game.id);
+  },
+  toJSON: function () {
+    return {
+      id: this.id,
+      area: this.area.toJSON(),
+      life: this.life,
+      money: this.money,
+      lastUpdateTime: this.lastUpdateTime,
+      player: this.player,
+      config: this.config,
+      modifiers: this.modifiers,
+    };
   }
 };
 
 /* -------- End Dungeon Class -------- */
-
 
 /**
  * Socket.IO on connect event
  * @param {Socket} socket
  */
 module.exports = function (socket) {
-  var user = new Dungeon(socket);
-
+  new Dungeon(socket);
   console.log("Connected: " + socket.id);
 };
