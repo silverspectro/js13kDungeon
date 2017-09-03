@@ -24,8 +24,8 @@
   var randomBGMap = [];
 
   function randomiseSquare() {
-    var random = Math.floor(Math.random() * 4);
-    return random > 0 ? ' bg' + random : '';
+    var random = Math.floor(Math.random() * 8);
+    return random > 0 && random <= bonusMapState.length ? ' bg' + random : '';
   }
 
   /**
@@ -183,6 +183,7 @@
     this.adversaries = [];
     this.adversariesPreview = [];
     this.adversaryIndex = 0;
+    this.keypressed = false;
 
     var self = this;
 
@@ -527,8 +528,8 @@
 
     var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
     // @TODO treat this as an option 
-    var areaColumns = 19;
-    var areaRows = 23;
+    var areaColumns = 11;
+    var areaRows = 15;
 
     buttons.forEach(function (button) {
       on(button, 'click', function () {
@@ -574,16 +575,23 @@
     });
 
     // add keyboard events
-    window.addEventListener('keyup', function (event) {
+    window.addEventListener('keydown', function (event) {
       var key = event.keyCode;
       var direction;
       if (controller) {
-        if      (key === 87 || key === 38) { direction = MOVE_UP; }
-        else if (key === 40 || key === 83) { direction = MOVE_DOWN; }
-        else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
-        else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
-
-        if (direction) socket.emit('move-player', direction);
+        if (!controller.keypressed) {
+          controller.keypressed = true;
+          
+          if      (key === 87 || key === 38) { direction = MOVE_UP; }
+          else if (key === 40 || key === 83) { direction = MOVE_DOWN; }
+          else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
+          else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
+  
+          if (direction) socket.emit('move-player', direction);
+          window.setTimeout(function (){
+            controller.keypressed = false;
+          }, 200);
+        }
       }
     });
   }
