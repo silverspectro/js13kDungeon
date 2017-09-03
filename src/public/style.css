@@ -1,38 +1,35 @@
 #overlay {
   position: fixed;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   top: 0;
   left: 0;
-  z-index: 1;
-  box-shadow:inset 0 0 50px 15px rgba(0,0,0,0.2);
+  z-index: -1;
+  box-shadow:inset 0 0 50px 15px rgba(0,0,0,0.9);
 }
 
 html, body {
   height: 100%;
-  background-color: rgb(231, 242, 244);
+  background-color: rgba(231, 242, 244, 0.7);
   overflow: hidden;
 }
 
-html, body, body * {
+* {
   margin: 0;
   padding: 0;
   list-style: none;
   text-decoration: none;
   box-sizing: border-box;
   color: black;
+  border: none;
   font-size: 14px;
   font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  transition: transform 0.2s ease-in-out;
 }
 
 *.on {
   display: initial;
-  animation-direction: normal;
-  animation-play-state: running;
-  animation-name: appear;
-  animation-fill-mode: both;
-  animation-duration: 0.2s;
-  animation-timing-function: ease-in-out;
+  animation: appear 0.2s 1 ease-in-out;
 }
 
 *.on.off {
@@ -57,6 +54,15 @@ html, body, body * {
   }
 }
 
+@keyframes selected {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 #option-list ul {
   display: flex;
   flex-direction: column;
@@ -65,7 +71,6 @@ html, body, body * {
 }
 
 button:focus {
-  border: none;
   outline: none;
 }
 
@@ -75,7 +80,6 @@ button {
   font-size: 16px;
   font-weight: bold;
   text-transform: uppercase;
-  border: none;
   color: rgb(249, 249, 249);
   background-color: rgb(210, 102, 98);
   cursor: pointer;
@@ -92,60 +96,26 @@ button:not(.selected):hover {
 }
 
 main {
-  position: fixed;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  z-index: 2;
+  height: 85%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
 }
 
 #dungeon-preview {
-  position: absolute;
+  width: 50%;
+  margin-left: 50%;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  width: 40%;
-  height: 50px;
-  bottom: 2%;
-  right: 2%;
-  z-index: 100;
-}
+ }
 
 .dungeon-preview-container {
-  position: relative;
-  width: 200px;
-  height: 90%;
   margin-left: 0.3em;
   cursor: pointer;
 }
 
 .dungeon-preview-container.selected {
   outline: 1px solid black;
-}
-
-.dungeon-preview-container:first-child {
-  display: none;
-}
-
-.dungeon-preview-container .dungeon-name {
-  position: absolute;
-  top: 0;
-  left: 0.5em;
-}
-
-.dungeon-preview-container .life-container {
-  width: 100%;
-}
-
-.dungeon-preview-container .life-bar {
-  width: 100%;
-  height: 5px;
-}
-
-.dungeon-preview-container .money-count {
-  top: initial;
-  left: 1.6em;
-  top: 0.4em;
 }
 
 nav {
@@ -165,13 +135,10 @@ nav ul li {
 }
 
 .ready {
-  position: absolute;
   width: 20px;
   height: 20px;
-  top: -5%;
-  left: 7%;
   background-color: rgb(210, 102, 98);
-  border-radius: 45px;
+  border-radius: 50%;
   cursor: pointer;
 }
 
@@ -179,27 +146,7 @@ nav ul li {
   background-color: rgb(133, 203, 46)
 }
 
-#start-menu {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  top: 50%;
-  left: 50%;
-  transform: translate3d(-50%, -50%, 0);
-  background-color: rgb(251, 251, 251);
-  width: 35%;
-  height: 25%;
-  box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
-  z-index: 999;
-}
-
-#start-menu button:not(:first-child) {
-  margin-top: 1em;
-}
-
-#games-menu {
+#start-menu, #games-menu {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -211,13 +158,17 @@ nav ul li {
   background-color: rgb(251, 251, 251);
   width: auto;
   min-height: 25%;
+  padding: 0 2em;
   box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
   z-index: 999;
 }
 
+#start-menu button:not(:first-child) {
+  margin-top: 1em;
+}
+
 #games-menu button {
-  position: relative;
-  align-self: stretch;
+  position: relative;  
 }
 
 #games-menu ul {
@@ -230,64 +181,62 @@ nav ul li {
   color: white;
 }
 
+main > * {
+  width: 48%;
+}
+
 .area-container {
-  position: absolute;
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  width: 48%;
-  height: 80%;
-  top: 5%;
-  overflow: visible;
-  left: 50%;
-  transform: translate(150%, 0);
-  transition: transform 0.2s ease-in-out;
+  align-items: flex-start;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  width: 100%;
+  height: 100%;
+}
+
+#my-dungeon .area-container {
+  flex-direction: row-reverse;
+}
+
+#adversaries-dungeon .area-container {
+  display: none;
+}
+
+#adversaries-dungeon .area-container.selected {
+  animation: selected 0.2s 1 ease-in-out;
+  display: flex;
+}
+
+.area-container .ready {
+  margin: 0 5%;
 }
 
 .area-container h1 {
-  position: absolute;
-  top: -5%;
-  left: 10%;
   font-size: 18px;
+  width: 80%;
+  text-align: center;
+  margin: 0.5em;
 }
 
-.area-container.selected {
-  transform: translate(0,0);
+.area-container .status-container {
+  width: 15%;
 }
 
-.area-container:first-child {
-  left: 0;
-  transform: translate(0, 0);
+.area-container .status-container > * {
+  text-align: center;
+  vertical-align: middle;
+  margin: auto;
 }
 
-.life-container {
-  position: relative;
-  width: 10%;
-  height: 100%;
-  left: 2%;
-  z-index: 10;
-}
-
-.life-bar {
-  width: 5px;
-  position: absolute;
-  bottom: -5%;
-  right: 45%;
-  transform: translate(-50%, 0);
-  background-color: red;
-  border-bottom-left-radius: 1000px;
-  border-bottom-right-radius: 1000px;
+.area-container .area {
+  width: 80%;
 }
 
 .life-count {
-  display: flex;
-  position: absolute;
-  top: 0%;
-  left: 50%;
-  transform: translate(-50%, 0%);
   width: 3em;
   height: 3em;
+  line-height: 2.7em;
   font-size: 1.8em;
   color: red;
   font-weight: bold;
@@ -299,36 +248,7 @@ nav ul li {
   justify-content: center;
 }
 
-.dungeon-preview-container .life-count {
-  position: absolute;
-  top: 0.4em;
-  left: 0%;
-  transform: translate(0%, 0%);
-  width: auto;
-  height: auto;
-  font-size: 1.8em;
-  color: red;
-  font-weight: bold;
-  text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.3);
-  background-color: transparent;
-  border: none;
-  border-radius: none;
-}
-.dungeon-preview-container .money-count:before {
-  content: none;
-}
-
-.dungeon-preview-container .life-bar {
-  left: 0;
-  right: initial;
-  bottom: 0;
-  transform: translate(0,0);
-}
-
 .money-count {
-  position: absolute;
-  top: 3em;
-  right: -1em;
   font-size: 1.8em;
   color: rgb(255, 222, 0);
   font-weight: bold;
@@ -337,26 +257,43 @@ nav ul li {
 
 .money-count:before {
   content: ' ';
-  position: absolute;
   width: 100%;
   height: 100%;
-  top: -1em;
-  left: 0.5em;
   background-image: url('money.gif');
   background-repeat: no-repeat;
   background-position: left center;
   background-size: contain;
 }
 
-.area {
-  position: absolute;
-  right: 0%;
-  border: 1px black solid;
+.dungeon-preview-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  flex-wrap: wrap;
   z-index: 9;
+}
+
+.dungeon-preview-container > * {
+  background-color: transparent;
+  border: none;
+  border-radius: none;
+}
+
+.dungeon-preview-container .life-count, .dungeon-preview-container .money-count {
+  width: 20%;
+  font-size: 1.8em;
+  line-height: initial;
+  height: auto;
+}
+
+.dungeon-preview-container .dungeon-name {
+  width: 90%;
+  text-align: center;
 }
 
 .row {
   line-height: 0px;
+  text-align: center;
 }
 
 .square {
@@ -364,7 +301,6 @@ nav ul li {
   display: inline-block;
   border-right: 1px solid #C3BFBF;
   border-bottom: 1px solid #C3BFBF;
-  box-sizing: border-box;
   cursor: pointer;
   background-color: #e0e0e0;
   background-size: contain;
@@ -392,45 +328,32 @@ nav ul li {
   background-image: url('wall.gif');
 }
 
-.area-container:first-child .square.dynamite::before {
-  display: none;
-}
-
-.square.dynamite::before {
+.square::before, .square::after {
   position: absolute;
   content: ' ';
   width: 100%;
   height: 100%;
   top: 0%;
   left: 0%;
-  background-image: url('trap.gif');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
+.dynamite::before {
+  background-image: url('dynamite.gif');
+}
+
+#my-dungeon .dynamite::before {
+  display: none;
+}
+
 .rhum::after {
-  position: absolute;
-  content: ' ';
-  width: 100%;
-  height: 100%;
-  top: 0%;
-  left: 0%;
   background-image: url('rhum.gif');
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
 .money::after {
-  position: absolute;
-  content: ' ';
-  width: 100%;
-  height: 100%;
-  top: 0%;
-  left: 0%;
   background-image: url('money.gif');
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
 .icon {
@@ -439,13 +362,13 @@ nav ul li {
   height: 1.5em;
   margin-left: 0.3em;
   vertical-align: bottom;
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
 }
 
 .icon.money {
   background-image: url('money.gif');
-  background-size: contain;
-  background-position: center bottom;
-  background-repeat: no-repeat;
 }
 
 .icon.money:after {
