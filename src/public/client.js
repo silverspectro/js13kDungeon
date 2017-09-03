@@ -63,10 +63,11 @@
    */
   function getCellSize(area) {
     
-    var width = window.innerWidth * 40 / 100;
-    var height = window.innerHeight * 80 / 100;
+    // rules given by css
+    var width = window.innerWidth * (80*48) / (100*100);  
+    var height = window.innerHeight * (90*85) / (100*100);
 
-    var cellSize = Math.min( Math.ceil(width/area.columns), Math.ceil(height/area.rows)  );
+    var cellSize = Math.min( Math.floor(width/area.columns), Math.floor(height/area.rows)  );
 
     return {
       width: cellSize + 'px',
@@ -85,7 +86,7 @@
   }
 
   var elementsOn = {},
-    startMenu = getElementById('start-menu');
+      startMenu = getElementById('start-menu');
 
   function toggle(element, force) {
     elementsOn[element.id] = element.className.includes('off');
@@ -155,7 +156,7 @@
     if(options.indexOf(controller.selectedOption) == -1) {
       controller.selectedOption = options[0];
     }
-    
+
     options.forEach(function (option) {
       var li = createUIElement('li');
       var button = createUIElement(
@@ -305,11 +306,8 @@
       var area = createUIElement('div', {
         class: 'area',
       });
-      var lifeContainer = createUIElement('div', {
-        class: 'life-container',
-      });
-      var lifeBar = createUIElement('div', {
-        class: 'life-bar',
+      var statusContainer = createUIElement('div', {
+        class: 'status-container',
       });
       var lifeCount = createUIElement('p', {
         class: 'life-count',
@@ -359,62 +357,56 @@
       }
 
       // append the elements to the DOM
-      lifeContainer.appendChild(lifeBar);
-      lifeContainer.appendChild(lifeCount);
-      lifeContainer.appendChild(moneyCount);
-
-      areaContainer.appendChild(dungeonName);
-      areaContainer.appendChild(lifeContainer);
       areaContainer.appendChild(readyButton);
+      areaContainer.appendChild(dungeonName);
+      statusContainer.appendChild(lifeCount);
+      statusContainer.appendChild(moneyCount);
+
+      areaContainer.appendChild(statusContainer);
       areaContainer.appendChild(area);
 
-      document.getElementsByTagName('main')[0].appendChild(areaContainer);
-
-      // creating dungeon preview
-      var previewContainer = createUIElement('div', {
-        class: 'dungeon-preview-container',
-        id: 'preview-' + dungeon.id,
-        'data-dungeon-id': dungeon.id,
-      });
-      var previewLifeContainer = createUIElement('div', {
-        class: 'life-container',
-      });
-      var previewLifeBar = createUIElement('div', {
-        class: 'life-bar',
-      });
-      var previewLifeCount = createUIElement('p', {
-        class: 'life-count',
-      });
-      var previewMoneyCount = createUIElement('p', {
-        class: 'money-count',
-      });
-      var previewDungeonName = createUIElement('p', {
-        class: 'dungeon-name',
-      });
-      previewDungeonName.innerHTML = dungeon.id;
-
-      previewLifeContainer.appendChild(previewLifeBar);
-      previewLifeContainer.appendChild(previewLifeCount);
-      previewLifeContainer.appendChild(previewMoneyCount);
-
-      previewContainer.appendChild(previewDungeonName);
-      previewContainer.appendChild(previewLifeContainer);
-
-      uiDungeon.previewLifeBar = previewLifeBar;
-      uiDungeon.previewLifeCount = previewLifeCount;
-      uiDungeon.previewMoneyCount = previewMoneyCount;
-
-      document.getElementById('dungeon-preview').appendChild(previewContainer);
-
       // map the element to the uiDungeon
-      uiDungeon.lifeBar = lifeBar;
       uiDungeon.lifeCount = lifeCount;
       uiDungeon.moneyCount = moneyCount;
       uiDungeon.readyButton = readyButton;
       this.dungeonsUI.push(uiDungeon);
 
-      if (this.dungeonsUI.length > 1) {
+      if(dungeon.id == self.game.id) { // not adversary
+        
+        document.getElementById('my-dungeon').appendChild(areaContainer);
+
+      } else { // adversary
+
+        document.getElementById('adversaries-dungeon').appendChild(areaContainer);
         this.adversaries.push(areaContainer);
+
+        // creating dungeon preview for opponents
+        
+        var previewContainer = createUIElement('div', {
+          class: 'dungeon-preview-container',
+          id: 'preview-' + dungeon.id,
+          'data-dungeon-id': dungeon.id,
+        });
+        var previewLifeCount = createUIElement('p', {
+          class: 'life-count',
+        });
+        var previewMoneyCount = createUIElement('p', {
+          class: 'money-count',
+        });
+        var previewDungeonName = createUIElement('p', {
+          class: 'dungeon-name',
+        });
+        previewDungeonName.innerHTML = dungeon.id;
+
+        previewContainer.appendChild(previewDungeonName);
+        previewContainer.appendChild(previewLifeCount);
+        previewContainer.appendChild(previewMoneyCount);
+
+        uiDungeon.previewLifeCount = previewLifeCount;
+        uiDungeon.previewMoneyCount = previewMoneyCount;
+
+        document.getElementById('dungeon-preview').appendChild(previewContainer);
+
         this.adversariesPreview.push(previewContainer);
 
         var ind = this.adversariesPreview.length - 1;
@@ -425,27 +417,24 @@
           self.selectAdversary(ind);
         });
       }
-      
+
     },
     updateUI: function () {
       var self = this;
       this.game.dungeons.forEach(function (dungeon, index) {
         const dungeonUI = find(self.dungeonsUI, dungeon.id);
-        // update lifeBar height
-        applyStyleOn(self.dungeonsUI[index].lifeBar, {
-          height: dungeon.life + '%',
-        });
-        applyStyleOn(self.dungeonsUI[index].previewLifeBar, {
-          width: dungeon.life + '%',
-        });
 
         // update life count
         dungeonUI.lifeCount.innerHTML = dungeon.life;
-        dungeonUI.previewLifeCount.innerHTML = dungeon.life;
 
         // update money count
         dungeonUI.moneyCount.innerHTML = dungeon.money;
-        dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
+
+        // for adversaries
+        if(dungeon.id != self.game.id) {
+          dungeonUI.previewLifeCount.innerHTML = dungeon.life;
+          dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
+        }
 
         // ready button
         var otherUi = find(self.dungeonsUI, dungeon.id);
