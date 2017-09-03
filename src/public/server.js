@@ -322,6 +322,7 @@ Dungeon.prototype = {
         console.log("Error can't move " + direction);
     }
     
+    // we check / transform requested position to allow crossing limits
     requestedX = requestedX % this.area.columns + 1 ? requestedX % this.area.columns : this.area.columns - 1;
     requestedY = requestedY % this.area.rows + 1 ? requestedY % this.area.rows : this.area.rows - 1;
 

@@ -2,6 +2,8 @@
 
 (function () {
 
+/* -------- General Functions -------- */
+
   /**
    * Add an event to a DOM element
    * @param {DOMElement} element - the element who listen
@@ -21,11 +23,9 @@
     return document.getElementById(id);
   }
 
-  var randomBGMap = [];
-
   function randomiseSquare() {
     var random = Math.floor(Math.random() * 8);
-    return random > 0 && random <= bonusMapState.length ? ' bg' + random : '';
+    return random > 0 && random <= 3 ? ' bg' + random : ''; // 3 backgrounds defined, cf. css
   }
 
   /**
@@ -62,10 +62,11 @@
    */
   function getCellSize(area) {
     
-    var width = window.innerWidth * 40 / 100;
-    var height = window.innerHeight * 80 / 100;
+    // rules given by css
+    var width = window.innerWidth * (80*48) / (100*100);  
+    var height = window.innerHeight * (90*85) / (100*100);
 
-    var cellSize = Math.min( Math.ceil(width/area.columns), Math.ceil(height/area.rows)  );
+    var cellSize = Math.min( Math.floor(width/area.columns), Math.floor(height/area.rows)  );
 
     return {
       width: cellSize + 'px',
@@ -83,9 +84,6 @@
     }
   }
 
-  var elementsOn = {},
-    startMenu = getElementById('start-menu');
-
   function toggle(element, force) {
     elementsOn[element.id] = element.className.includes('off');
     if (elementsOn[element.id] && !force) {
@@ -94,15 +92,8 @@
       element.classList.add('off');
     }
   }
-
-  var gamesList = getElementById('games-menu'),
-      gamesUl = getElementById('games-list'),
-      optionList = getElementById('option-list'),
-      optionListUl = optionList.getElementsByTagName('ul')[0],
-      selectedGameId;
-
   function updateGameListUI() {
-    var listArray = Array.prototype.slice.apply(gamesUl.children);
+    var listArray = Array.apply(null, gamesUl.children);
     listArray.forEach(function (li) {
       if (li.getAttribute('data-game-id') === selectedGameId) li.classList.add('selected')
       else li.classList.remove('selected');
@@ -127,7 +118,7 @@
   }
 
   function updateGameOptionsSelected() {
-    var optionButtons = Array.prototype.slice.apply(optionListUl.getElementsByTagName('button'));
+    var optionButtons = Array.apply(null, optionListUl.getElementsByTagName('button'));
 
     optionButtons.forEach(function (button) {
       var state = button.getAttribute('data-option-index');
@@ -154,7 +145,7 @@
     if(options.indexOf(controller.selectedOption) == -1) {
       controller.selectedOption = options[0];
     }
-    
+
     options.forEach(function (option) {
       var li = createUIElement('li');
       var button = createUIElement(
@@ -171,7 +162,46 @@
     updateGameOptionsSelected();
   }
 
-  /* -------- ClientController Class -------- */
+  /**
+   * Apply style to an elements
+   * @param {DOMElement} element 
+   * @param {Object} style 
+   */
+  function applyStyleOn(element, style) {
+    for (var key in style) {
+      element.style[key] = style[key];
+    }
+  };
+
+  /**
+   * Apply attributes to an elements
+   * @param {DOMElement} element 
+   * @param {Object} attributes 
+   */
+  function applyAttributesOn(element, attributes) {
+    for (var key in attributes) {
+      element.setAttribute(key, attributes[key]);
+    }
+  };
+
+  function createUIElement(type, attributes, events) {
+    var element = document.createElement(type);
+    attributes = attributes || {};
+    events = events || {};
+
+    applyAttributesOn(element, attributes);
+
+    for (var event in events) {
+      element.addEventListener(event, events[event]);
+    }
+
+    return element;
+  }
+
+/* -------- End General Functions -------- */
+
+
+/* -------- ClientController Class -------- */
 
   /**
    * ClientController Class
@@ -268,7 +298,7 @@
       var adversaryPreviewIndex = this.adversariesPreview.indexOf(dungeonUIPreview);
       this.adversaries.splice(adversaryIndex, 1);
       this.adversariesPreview.splice(adversaryPreviewIndex, 1);
-      document.getElementsByTagName('main')[0].removeChild(dungeonUI);
+      dungeonUI.parentElement.removeChild(dungeonUI);
       document.getElementById('dungeon-preview').removeChild(dungeonUIPreview);
     },
     applyOptionEvent: function (event) {
@@ -306,11 +336,8 @@
       var area = createUIElement('div', {
         class: 'area',
       });
-      var lifeContainer = createUIElement('div', {
-        class: 'life-container',
-      });
-      var lifeBar = createUIElement('div', {
-        class: 'life-bar',
+      var statusContainer = createUIElement('div', {
+        class: 'status-container',
       });
       var lifeCount = createUIElement('p', {
         class: 'life-count',
@@ -366,62 +393,56 @@
       }
 
       // append the elements to the DOM
-      lifeContainer.appendChild(lifeBar);
-      lifeContainer.appendChild(lifeCount);
-      lifeContainer.appendChild(moneyCount);
-
-      areaContainer.appendChild(dungeonName);
-      areaContainer.appendChild(lifeContainer);
       areaContainer.appendChild(readyButton);
+      areaContainer.appendChild(dungeonName);
+      statusContainer.appendChild(lifeCount);
+      statusContainer.appendChild(moneyCount);
+
+      areaContainer.appendChild(statusContainer);
       areaContainer.appendChild(area);
 
-      document.getElementsByTagName('main')[0].appendChild(areaContainer);
-
-      // creating dungeon preview
-      var previewContainer = createUIElement('div', {
-        class: 'dungeon-preview-container',
-        id: 'preview-' + dungeon.id,
-        'data-dungeon-id': dungeon.id,
-      });
-      var previewLifeContainer = createUIElement('div', {
-        class: 'life-container',
-      });
-      var previewLifeBar = createUIElement('div', {
-        class: 'life-bar',
-      });
-      var previewLifeCount = createUIElement('p', {
-        class: 'life-count',
-      });
-      var previewMoneyCount = createUIElement('p', {
-        class: 'money-count',
-      });
-      var previewDungeonName = createUIElement('p', {
-        class: 'dungeon-name',
-      });
-      previewDungeonName.innerHTML = dungeon.id;
-
-      previewLifeContainer.appendChild(previewLifeBar);
-      previewLifeContainer.appendChild(previewLifeCount);
-      previewLifeContainer.appendChild(previewMoneyCount);
-
-      previewContainer.appendChild(previewDungeonName);
-      previewContainer.appendChild(previewLifeContainer);
-
-      uiDungeon.previewLifeBar = previewLifeBar;
-      uiDungeon.previewLifeCount = previewLifeCount;
-      uiDungeon.previewMoneyCount = previewMoneyCount;
-
-      document.getElementById('dungeon-preview').appendChild(previewContainer);
-
       // map the element to the uiDungeon
-      uiDungeon.lifeBar = lifeBar;
       uiDungeon.lifeCount = lifeCount;
       uiDungeon.moneyCount = moneyCount;
       uiDungeon.readyButton = readyButton;
       this.dungeonsUI.push(uiDungeon);
 
-      if (this.dungeonsUI.length > 1) {
+      if(dungeon.id == self.game.id) { // not adversary
+        
+        document.getElementById('my-dungeon').appendChild(areaContainer);
+
+      } else { // adversary
+
+        document.getElementById('adversaries-dungeon').appendChild(areaContainer);
         this.adversaries.push(areaContainer);
+
+        // creating dungeon preview for opponents
+        
+        var previewContainer = createUIElement('div', {
+          class: 'dungeon-preview-container',
+          id: 'preview-' + dungeon.id,
+          'data-dungeon-id': dungeon.id,
+        });
+        var previewLifeCount = createUIElement('p', {
+          class: 'life-count',
+        });
+        var previewMoneyCount = createUIElement('p', {
+          class: 'money-count',
+        });
+        var previewDungeonName = createUIElement('p', {
+          class: 'dungeon-name',
+        });
+        previewDungeonName.innerHTML = dungeon.id;
+
+        previewContainer.appendChild(previewDungeonName);
+        previewContainer.appendChild(previewLifeCount);
+        previewContainer.appendChild(previewMoneyCount);
+
+        uiDungeon.previewLifeCount = previewLifeCount;
+        uiDungeon.previewMoneyCount = previewMoneyCount;
+
+        document.getElementById('dungeon-preview').appendChild(previewContainer);
+
         this.adversariesPreview.push(previewContainer);
 
         var ind = this.adversariesPreview.length - 1;
@@ -432,27 +453,24 @@
           self.selectAdversary(ind);
         });
       }
-      
+
     },
     updateUI: function () {
       var self = this;
       this.game.dungeons.forEach(function (dungeon, index) {
         const dungeonUI = find(self.dungeonsUI, dungeon.id);
-        // update lifeBar height
-        applyStyleOn(self.dungeonsUI[index].lifeBar, {
-          height: dungeon.life + '%',
-        });
-        applyStyleOn(self.dungeonsUI[index].previewLifeBar, {
-          width: dungeon.life + '%',
-        });
 
         // update life count
         dungeonUI.lifeCount.innerHTML = dungeon.life;
-        dungeonUI.previewLifeCount.innerHTML = dungeon.life;
 
         // update money count
         dungeonUI.moneyCount.innerHTML = dungeon.money;
-        dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
+
+        // for adversaries
+        if(dungeon.id != self.game.id) {
+          dungeonUI.previewLifeCount.innerHTML = dungeon.life;
+          dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
+        }
 
         // ready button
         var otherUi = find(self.dungeonsUI, dungeon.id);
@@ -481,13 +499,28 @@
     },
   }
 
-  /* -------- End ClientController Class -------- */
+/* -------- End ClientController Class -------- */
 
+var elementsOn = {},
+    randomBGMap = [],
+    startMenu = getElementById('start-menu'),
+    gamesList = getElementById('games-menu'),
+    gamesUl = getElementById('games-list'),
+    optionList = getElementById('option-list'),
+    optionListUl = optionList.getElementsByTagName('ul')[0],
+    selectedGameId,
+    socket, //Socket.IO client
+    controller,
+    mouseX = 0,
+    mouseY = 0;
 
-  var socket, //Socket.IO client
-      controller,
-      mouseX = 0,
-      mouseY = 0;
+    function initClientController(game) {
+      controller = new ClientController(socket);
+      controller.updateGame(game);
+      toggle(startMenu, true);
+      toggle(gamesList, true);
+      toggle(optionList);
+    }
 
   /**
    * Binde Socket.IO and button events
@@ -501,21 +534,16 @@
     });
 
     socket.on("game-created", function (newGame) {
-      controller = new ClientController(socket);
-      controller.updateGame(newGame);
-      updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
-      toggle(startMenu);
-      optionList.classList.remove('off');
+      initClientController(newGame);
+      updateGameOptions(newGame.options, find(newGame.dungeons, socket.id).config);
     });
 
     socket.on("update", function (updatedGame) {
-      if (!controller) controller = new ClientController(socket);
-      controller.updateGame(updatedGame);
+      controller ? controller.updateGame(updatedGame) : initClientController(updatedGame); // we have to create controller when joining a game
+      
       var dungeon = find(controller.game.dungeons, socket.id);
-      toggle(startMenu, true);
-      toggle(gamesList, true);
       controller.selectAdversary(controller.adversaryIndex);
-      if (controller.game.options.length) updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
+      updateGameOptions(updatedGame.options, dungeon.config);
     });
 
     socket.on("error", function () {});
@@ -533,8 +561,9 @@
       }
     });
 
-    var buttons = Array.prototype.slice.apply(document.getElementsByTagName('button'));
-    // @TODO treat this as an option 
+    var buttons = Array.apply(null, document.getElementsByTagName('button'));
+
+    // @TODO should be editable by game owner.
     var areaColumns = 11;
     var areaRows = 15;
 
@@ -599,14 +628,14 @@
           if (direction) socket.emit('move-player', direction);
           timeout = window.setTimeout(function (){
             controller.keypressed = false;
-          }, 200);
+          }, 100);
         }
       }
     });
 
     window.addEventListener('keyup', function() {
       clearInterval(timeout);
-      controller.keypressed = false;
+      if(controller) controller.keypressed = false;
     });
   }
 
