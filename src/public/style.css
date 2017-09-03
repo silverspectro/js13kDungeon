@@ -29,12 +29,7 @@ html, body {
 
 *.on {
   display: initial;
-  animation-direction: normal;
-  animation-play-state: running;
-  animation-name: appear;
-  animation-fill-mode: both;
-  animation-duration: 0.2s;
-  animation-timing-function: ease-in-out;
+  animation: appear 0.2s 1 ease-in-out;
 }
 
 *.on.off {
@@ -56,6 +51,15 @@ html, body {
   }
   100% {
     transform: translate(-50%, -50%) scale(1, 1);
+  }
+}
+
+@keyframes selected {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -103,8 +107,7 @@ main {
   width: 50%;
   margin-left: 50%;
   display: flex;
-  /* z-index: 100; */
-}
+ }
 
 .dungeon-preview-container {
   margin-left: 0.3em;
@@ -112,7 +115,6 @@ main {
 }
 
 .dungeon-preview-container.selected {
-  animation-name: appear;
   outline: 1px solid black;
 }
 
@@ -199,7 +201,7 @@ nav ul li {
 }
 
 #adversaries-dungeon .area-container.selected {
-  animation-name: appear; /* Todo : manage some transitions */
+  animation: selected 0.2s 1 ease-in-out;
   display: flex;
 }
 
