@@ -2,6 +2,8 @@
 
 (function () {
 
+/* -------- General Functions -------- */
+
   /**
    * Add an event to a DOM element
    * @param {DOMElement} element - the element who listen
@@ -20,8 +22,6 @@
   function getElementById(id) {
     return document.getElementById(id);
   }
-
-  var randomBGMap = [];
 
   function randomiseSquare() {
     var random = Math.floor(Math.random() * 8);
@@ -84,9 +84,6 @@
     }
   }
 
-  var elementsOn = {},
-      startMenu = getElementById('start-menu');
-
   function toggle(element, force) {
     elementsOn[element.id] = element.className.includes('off');
     if (elementsOn[element.id] && !force) {
@@ -95,13 +92,6 @@
       element.classList.add('off');
     }
   }
-
-  var gamesList = getElementById('games-menu'),
-      gamesUl = getElementById('games-list'),
-      optionList = getElementById('option-list'),
-      optionListUl = optionList.getElementsByTagName('ul')[0],
-      selectedGameId;
-
   function updateGameListUI() {
     var listArray = Array.apply(null, gamesUl.children);
     listArray.forEach(function (li) {
@@ -172,7 +162,46 @@
     updateGameOptionsSelected();
   }
 
-  /* -------- ClientController Class -------- */
+  /**
+   * Apply style to an elements
+   * @param {DOMElement} element 
+   * @param {Object} style 
+   */
+  function applyStyleOn(element, style) {
+    for (var key in style) {
+      element.style[key] = style[key];
+    }
+  };
+
+  /**
+   * Apply attributes to an elements
+   * @param {DOMElement} element 
+   * @param {Object} attributes 
+   */
+  function applyAttributesOn(element, attributes) {
+    for (var key in attributes) {
+      element.setAttribute(key, attributes[key]);
+    }
+  };
+
+  function createUIElement(type, attributes, events) {
+    var element = document.createElement(type);
+    attributes = attributes || {};
+    events = events || {};
+
+    applyAttributesOn(element, attributes);
+
+    for (var event in events) {
+      element.addEventListener(event, events[event]);
+    }
+
+    return element;
+  }
+
+/* -------- End General Functions -------- */
+
+
+/* -------- ClientController Class -------- */
 
   /**
    * ClientController Class
@@ -464,13 +493,28 @@
     },
   }
 
-  /* -------- End ClientController Class -------- */
+/* -------- End ClientController Class -------- */
 
+var elementsOn = {},
+    randomBGMap = [],
+    startMenu = getElementById('start-menu'),
+    gamesList = getElementById('games-menu'),
+    gamesUl = getElementById('games-list'),
+    optionList = getElementById('option-list'),
+    optionListUl = optionList.getElementsByTagName('ul')[0],
+    selectedGameId,
+    socket, //Socket.IO client
+    controller,
+    mouseX = 0,
+    mouseY = 0;
 
-  var socket, //Socket.IO client
-      controller,
-      mouseX = 0,
-      mouseY = 0;
+    function initClientController(game) {
+      controller = new ClientController(socket);
+      controller.updateGame(game);
+      toggle(startMenu, true);
+      toggle(gamesList, true);
+      toggle(optionList);
+    }
 
   /**
    * Binde Socket.IO and button events
@@ -484,21 +528,16 @@
     });
 
     socket.on("game-created", function (newGame) {
-      controller = new ClientController(socket);
-      controller.updateGame(newGame);
-      updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
-      toggle(startMenu);
-      optionList.classList.remove('off');
+      initClientController(newGame);
+      updateGameOptions(newGame.options, find(newGame.dungeons, socket.id).config);
     });
 
     socket.on("update", function (updatedGame) {
-      if (!controller) controller = new ClientController(socket);
-      controller.updateGame(updatedGame);
+      controller ? controller.updateGame(updatedGame) : initClientController(updatedGame); // we have to create controller when joining a game
+      
       var dungeon = find(controller.game.dungeons, socket.id);
-      toggle(startMenu, true);
-      toggle(gamesList, true);
       controller.selectAdversary(controller.adversaryIndex);
-      if (controller.game.options.length) updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
+      updateGameOptions(updatedGame.options, dungeon.config);
     });
 
     socket.on("error", function () {});
@@ -590,7 +629,7 @@
 
     window.addEventListener('keyup', function() {
       clearInterval(timeout);
-      controller.keypressed = false;
+      if(controller) controller.keypressed = false;
     });
   }
 

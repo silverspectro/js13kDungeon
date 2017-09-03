@@ -57,42 +57,6 @@ function findIndex(array, id) {
   return undefined;
 }
 
-/**
- * Apply style to an elements
- * @param {DOMElement} element 
- * @param {Object} style 
- */
-function applyStyleOn(element, style) {
-  for (var key in style) {
-    element.style[key] = style[key];
-  }
-};
-
-/**
- * Apply attributes to an elements
- * @param {DOMElement} element 
- * @param {Object} attributes 
- */
-function applyAttributesOn(element, attributes) {
-  for (var key in attributes) {
-    element.setAttribute(key, attributes[key]);
-  }
-};
-
-function createUIElement(type, attributes, events) {
-  var element = document.createElement(type);
-  attributes = attributes || {};
-  events = events || {};
-
-  applyAttributesOn(element, attributes);
-
-  for (var event in events) {
-    element.addEventListener(event, events[event]);
-  }
-
-  return element;
-}
-
 /* -------- End General Functions -------- */
 
 
