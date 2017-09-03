@@ -57,6 +57,13 @@ html, body, body * {
   }
 }
 
+#option-list ul {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+}
+
 button:focus {
   border: none;
   outline: none;
@@ -360,7 +367,7 @@ nav ul li {
   box-sizing: border-box;
   cursor: pointer;
   background-color: #e0e0e0;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }
@@ -377,10 +384,6 @@ nav ul li {
   background-image: url('rock3.gif');
 }
 
-.square.bg4 {
-  background-image: url('rock4.gif');
-}
-
 .square.player {
   background-image: url('player.gif');
 }
@@ -389,11 +392,11 @@ nav ul li {
   background-image: url('wall.gif');
 }
 
-.area-container:first-child .square.trap::after {
+.area-container:first-child .square.dynamite::before {
   display: none;
 }
 
-.square.trap::before {
+.square.dynamite::before {
   position: absolute;
   content: ' ';
   width: 100%;
@@ -406,17 +409,6 @@ nav ul li {
   background-repeat: no-repeat;
 }
 
-.life::after {
-  position: absolute;
-  content: ' ';
-  width: 100%;
-  height: 100%;
-  top: 0%;
-  left: 0%;
-  background-image: url('life.gif');
-  background-size: cover;
-}
-
 .rhum::after {
   position: absolute;
   content: ' ';
@@ -426,6 +418,7 @@ nav ul li {
   left: 0%;
   background-image: url('rhum.gif');
   background-position: center;
+  background-repeat: no-repeat;
 }
 
 .money::after {
@@ -436,6 +429,26 @@ nav ul li {
   top: 0%;
   left: 0%;
   background-image: url('money.gif');
+  background-position: center;
   background-repeat: no-repeat;
+}
+
+.icon {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  margin-left: 0.3em;
+  vertical-align: bottom;
+}
+
+.icon.money {
+  background-image: url('money.gif');
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}
+
+.icon.money:after {
+  content: none;
 }
 

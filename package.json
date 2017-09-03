@@ -18,6 +18,7 @@
     "node": "8.*"
   },
   "dependencies": {
+    "del": "^3.0.0",
     "express": "4.15.*",
     "glitchd-client-node": "*",
     "gulp-nodemon": "^2.2.1",
