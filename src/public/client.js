@@ -327,7 +327,7 @@
           if (dungeonId === self.game.id) self.broadcast('ready', dungeonId);
         },
       });
-
+      
       // Create the area DOM squares
       // and associate it to the new uiDungeon
       // for update loop and performance
@@ -509,7 +509,7 @@
       toggle(startMenu, true);
       toggle(gamesList, true);
       controller.selectAdversary(controller.adversaryIndex);
-      if (controller.game.options.length) updateGameOptions(controller.game.options, find(contorller.game.dungeons, controller.game.id).config);
+      if (controller.game.options.length) updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
     });
 
     socket.on("error", function () {});
