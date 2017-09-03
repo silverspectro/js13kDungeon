@@ -298,7 +298,7 @@
       var adversaryPreviewIndex = this.adversariesPreview.indexOf(dungeonUIPreview);
       this.adversaries.splice(adversaryIndex, 1);
       this.adversariesPreview.splice(adversaryPreviewIndex, 1);
-      document.getElementsByTagName('main')[0].removeChild(dungeonUI);
+      dungeonUI.parentElement.removeChild(dungeonUI);
       document.getElementById('dungeon-preview').removeChild(dungeonUIPreview);
     },
     applyOptionEvent: function (event) {
@@ -354,7 +354,13 @@
           if (dungeonId === self.game.id) self.broadcast('ready', dungeonId);
         },
       });
-      
+
+      for (var l = 0; l < 3; l++) {
+        area.appendChild(createUIElement('div', {
+          class: 'light',
+        }))
+      };
+
       // Create the area DOM squares
       // and associate it to the new uiDungeon
       // for update loop and performance
