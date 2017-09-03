@@ -122,7 +122,7 @@ main {
 
 .dungeon-preview-container .dungeon-name {
   position: absolute;
-  top: -1em;
+  top: 0;
   left: 0.5em;
 }
 
@@ -138,6 +138,7 @@ main {
 .dungeon-preview-container .money-count {
   top: initial;
   left: 1.6em;
+  top: 0.4em;
 }
 
 nav {
@@ -224,9 +225,13 @@ nav ul li {
 
 .area-container {
   position: absolute;
-  width: 50%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 48%;
   height: 80%;
-  top: 10%;
+  top: 5%;
   overflow: visible;
   left: 50%;
   transform: translate(150%, 0);
@@ -250,47 +255,97 @@ nav ul li {
 }
 
 .life-container {
-  position: absolute;
-  left: 3%;
-  bottom: 0;
-  width: 50px;
+  position: relative;
+  width: 10%;
   height: 100%;
+  left: 2%;
+  z-index: 10;
 }
 
 .life-bar {
   width: 5px;
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: -5%;
+  right: 45%;
+  transform: translate(-50%, 0);
   background-color: red;
+  border-bottom-left-radius: 1000px;
+  border-bottom-right-radius: 1000px;
 }
 
 .life-count {
+  display: flex;
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 0%;
+  left: 50%;
+  transform: translate(-50%, 0%);
+  width: 3em;
+  height: 3em;
   font-size: 1.8em;
   color: red;
   font-weight: bold;
   text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.3);
+  background-color: white;
+  border: 3px solid red;
+  border-radius: 5em;
+  align-items: center;
+  justify-content: center;
+}
+
+.dungeon-preview-container .life-count {
+  position: absolute;
+  top: 0.4em;
+  left: 0%;
+  transform: translate(0%, 0%);
+  width: auto;
+  height: auto;
+  font-size: 1.8em;
+  color: red;
+  font-weight: bold;
+  text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.3);
+  background-color: transparent;
+  border: none;
+  border-radius: none;
+}
+.dungeon-preview-container .money-count:before {
+  content: none;
+}
+
+.dungeon-preview-container .life-bar {
+  left: 0;
+  right: initial;
+  bottom: 0;
+  transform: translate(0,0);
 }
 
 .money-count {
   position: absolute;
-  top: 1em;
-  left: 0;
+  top: 3em;
+  right: -1em;
   font-size: 1.8em;
   color: rgb(255, 222, 0);
   font-weight: bold;
   text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.3);
 }
 
+.money-count:before {
+  content: ' ';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: -1em;
+  left: 0.5em;
+  background-image: url('money.gif');
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+}
+
 .area {
   position: absolute;
-  display: table;
-  left: 10%;
-  top: 0;
+  right: 0%;
   border: 1px black solid;
+  z-index: 9;
 }
 
 .row {
@@ -327,25 +382,25 @@ nav ul li {
 }
 
 .square.player {
-  background-image: url('player.gif')!important;
+  background-image: url('player.gif');
 }
 
 .square.wall {
-  background-image: url('wall.gif')!important;
+  background-image: url('wall.gif');
 }
 
 .area-container:first-child .square.trap::after {
   display: none;
 }
 
-.square.trap::after {
+.square.trap::before {
   position: absolute;
   content: ' ';
   width: 100%;
   height: 100%;
   top: 0%;
   left: 0%;
-  background-image: url('trap.gif')!important;
+  background-image: url('trap.gif');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

@@ -553,6 +553,10 @@
       });
     });
 
+    window.addEventListener('resize', function () {
+      if (controller) controller.updateUI();
+    });
+
     window.addEventListener('mousemove', function (event) {
       mouseX = event.clientX;
       mouseY = event.clientY;
