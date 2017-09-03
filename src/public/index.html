@@ -20,14 +20,26 @@
         <ul></ul>
     </nav>
 
-    <div id="start-menu" class="on">
-        <button id="new-game">New Game</button>
-        <button id="list-games">Join</button>
-    </div>
+    <div id="home-menu" class="on">
 
-    <div id="games-menu" class="on off">
-        <ul id="games-list"></ul>
-        <button id="join-game">Join</button>
+        <h1>Laby-love</h1>
+
+        <section>
+            <label for="gn">Dungeon name</label>
+            <input id="gn" type="text" name="gameName" placeholder="Set your warrior name here" required="required"/>
+            <label for="ac">Game area columns</label>
+            <input id="ac" type="number" name="areaColumns" value="11" required="required" step="2" min="5" max="31"/>
+            <label for="ar">Game area rows</label>
+            <input id="ar" type="number" name="areaRows" value="15" required="required" step="2" min="7" max="47"/>
+            <button id="new-g">New game</button>
+        </section>
+        
+        <section>
+            <select id="gl" name="gameId">
+            </select>
+            <button id="refresh-gl">Refresh</button>
+            <button id="join-g">Join</button>
+        </section>
     </div>
 
     <div id="overlay"></div>
