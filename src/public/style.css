@@ -352,6 +352,7 @@ nav ul li {
   position: absolute;
   right: 0%;
   border: 1px black solid;
+  overflow: hidden;
   z-index: 9;
 }
 
@@ -450,5 +451,62 @@ nav ul li {
 
 .icon.money:after {
   content: none;
+}
+
+.light {
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  transform: translate(-50%, -50%); 
+  width: 40em;
+  height: 40em;
+  border-radius: 40em;
+  opacity: 0.4;
+  background: -moz-radial-gradient(center, ellipse cover, rgba(252,210,70,1) 0%, rgba(237,213,80,0.52) 48%, rgba(239,224,129,0) 100%);
+  background: -webkit-radial-gradient(center, ellipse cover, rgba(252,210,70,1) 0%,rgba(237,213,80,0.52) 48%,rgba(239,224,129,0) 100%);
+  background: radial-gradient(ellipse at center, rgba(252,210,70,1) 0%,rgba(237,213,80,0.52) 48%,rgba(239,224,129,0) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcd246', endColorstr='#00efe081',GradientType=1 );
+  animation: pulse 30s;
+  animation-direction: alternate-reverse;
+  animation-fill-mode: both;
+  animation-iteration-count: infinite;
+  z-index: 10;
+}
+
+.light:nth-child(2) {
+  top: 50%;
+  left: 100%;
+  width: 25em;
+  height: 25em;
+  animation-delay: 5s;
+}
+
+.light:nth-child(3) {
+  top: 100%;
+  left: 20%;
+  animation-delay: 10s;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1, 1);
+  }
+  25% {
+    opacity: 0.25;
+    transform: translate(-50%, -50%) scale(0.75, 0.75);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.2, 1.2);
+  }
+  75% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(0.85, 0.85);
+  }
+  100% {
+    opacity: 0.25;
+    transform: translate(-50%, -50%) scale(1, 1);
+  }
 }
 

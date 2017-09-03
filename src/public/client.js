@@ -327,7 +327,13 @@
           if (dungeonId === self.game.id) self.broadcast('ready', dungeonId);
         },
       });
-      
+
+      for (var l = 0; l < 3; l++) {
+        area.appendChild(createUIElement('div', {
+          class: 'light',
+        }))
+      };
+
       // Create the area DOM squares
       // and associate it to the new uiDungeon
       // for update loop and performance
