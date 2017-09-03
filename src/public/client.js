@@ -622,7 +622,7 @@ var elementsOn = {},
           if (direction) socket.emit('move-player', direction);
           timeout = window.setTimeout(function (){
             controller.keypressed = false;
-          }, 200);
+          }, 100);
         }
       }
     });
