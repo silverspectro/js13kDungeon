@@ -144,7 +144,7 @@
     updateGameOptionsSelected();
   }
 
-  function updateGameOptions(options) {
+  function updateGameOptions(options, config) {
 
     if(options.length <= 0) {
       throw new Error('Invalid option list for controll.')
@@ -162,7 +162,8 @@
         { 'data-option-index': option, },
         { click: selectOption, }
       );
-      button.innerHTML = getStateLabel(option);
+      var stateName = getStateLabel(option);
+      button.innerHTML = stateName + ' ' + config[stateName.toLowerCase() + 'Cost'] + '<div class="icon money"></div>';
 
       li.appendChild(button);
       optionListUl.appendChild(li);
@@ -496,7 +497,7 @@
     socket.on("game-created", function (newGame) {
       controller = new ClientController(socket);
       controller.updateGame(newGame);
-      updateGameOptions(controller.game.options);
+      updateGameOptions(controller.game.options, find(controller.game.dungeons, controller.game.id).config);
       toggle(startMenu);
       optionList.classList.remove('off');
     });
@@ -508,7 +509,7 @@
       toggle(startMenu, true);
       toggle(gamesList, true);
       controller.selectAdversary(controller.adversaryIndex);
-      if (controller.game.options.length) updateGameOptions(controller.game.options);
+      if (controller.game.options.length) updateGameOptions(controller.game.options, find(contorller.game.dungeons, controller.game.id).config);
     });
 
     socket.on("error", function () {});

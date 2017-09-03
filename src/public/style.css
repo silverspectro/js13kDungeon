@@ -433,3 +433,22 @@ nav ul li {
   background-repeat: no-repeat;
 }
 
+.icon {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  margin-left: 0.3em;
+  vertical-align: bottom;
+}
+
+.icon.money {
+  background-image: url('money.gif');
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}
+
+.icon.money:after {
+  content: none;
+}
+
