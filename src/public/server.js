@@ -322,15 +322,8 @@ Dungeon.prototype = {
         console.log("Error can't move " + direction);
     }
     
-    // check forbidden movement
-    if( 
-      (requestedX < 0) ||
-      (requestedY < 0) ||
-      (requestedX >= this.area.columns) ||
-      (requestedY >= this.area.rows)
-    ) {
-      return;
-    }
+    requestedX = requestedX % this.area.columns + 1 ? requestedX % this.area.columns : this.area.columns - 1;
+    requestedY = requestedY % this.area.rows + 1 ? requestedY % this.area.rows : this.area.rows - 1;
 
     var requestedPositionState = this.area.getState(requestedX, requestedY);
     if(requestedPositionState & STATE_WALL) {

@@ -360,7 +360,7 @@ nav ul li {
   box-sizing: border-box;
   cursor: pointer;
   background-color: #e0e0e0;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }
@@ -436,6 +436,7 @@ nav ul li {
   top: 0%;
   left: 0%;
   background-image: url('money.gif');
+  background-position: center;
   background-repeat: no-repeat;
 }
 
