@@ -41,7 +41,6 @@
     if( state & STATE_WALL ) { cssClass += " wall"; }
     if( state & STATE_TRAP ) { cssClass += " trap"; }
     if( state & STATE_MONEY ) { cssClass += " money"; }
-    if( state & STATE_LIFE ) { cssClass += " life"; }
     if( state & STATE_RHUM ) { cssClass += " rhum"; }
     
     return cssClass;

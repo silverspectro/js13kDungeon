@@ -6,11 +6,10 @@ var STATE_DEFAULT  = 1;   // 0x 00000001
 var STATE_PLAYER   = 2;   // 0x 00000010
 var STATE_WALL     = 4;   // 0x 00000100
 var STATE_TRAP     = 8;   // 0x 00001000
-var STATE_LIFE     = 16;  // 0x 00010000
-var STATE_RHUM     = 32;  // 0x 00100000
-var STATE_MONEY    = 64;  // 0x 01000000
+var STATE_RHUM     = 16;  // 0x 00100000
+var STATE_MONEY    = 32;  // 0x 01000000
 
-var bonusMapState = [STATE_LIFE, STATE_RHUM, STATE_MONEY];
+var bonusMapState = [STATE_RHUM, STATE_MONEY];
 
 var MOVE_UP         = "up";
 var MOVE_DOWN       = "down";

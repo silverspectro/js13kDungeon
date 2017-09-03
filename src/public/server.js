@@ -60,7 +60,6 @@ ServerController.prototype = {
       var randX = Math.floor(Math.random() * parseInt(self.game.dungeons[0].area.columns, 10));
       var randY = Math.floor(Math.random() * parseInt(self.game.dungeons[0].area.rows, 10));
       if (time % parseInt(dungeon.config.bonusInterval, 10) === 0) {
-        console.log(time, parseInt(parseInt(dungeon.config.bonusInterval, 10)), time % parseInt(dungeon.config.bonusInterval, 10), dungeon.id);
         dungeon.applyState(randX, randY, randState, dungeon);
       };
     });
@@ -267,7 +266,6 @@ Dungeon.prototype = {
 
     if(this.id === bullyDungeon.id) {
       if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL)
-        || (requestedState & STATE_LIFE) && !(originalState & STATE_WALL)
         || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) ) {
         this.area.setState(x, y, (originalState & STATE_TRAP) | requestedState);
         return true;
@@ -336,10 +334,6 @@ Dungeon.prototype = {
     this.player.x = requestedX;
     this.player.y = requestedY;
     this.life--;
-
-    if( requestedPositionState & STATE_LIFE ) {
-      this.life += this.config.lifeBonusValue;
-    }
 
     if( requestedPositionState & STATE_RHUM ) {
       this.life += this.config.rhumBonusValue;
