@@ -25,10 +25,10 @@ var MOVE_LEFT       = "left";
 /**
  * Remove an element from an array
  * @param {array} array
- * @param {element} element
+ * @param {Int} index of removed element
  */
-function remove(array, element) {
-  array.splice(array.indexOf(element), 1);
+function removeByIndex(array, index) {
+  array.splice(index, 1);
 }
 
 /**

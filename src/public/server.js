@@ -107,7 +107,7 @@ var controllers = [];
 function listRooms() {
   for (var i = 0; i < controllers.length; i++) {
     if (controllers[i].game.dungeons.length === 0) {
-      remove(controllers, i);
+      removeByIndex(controllers, i);
     } 
   }
   return controllers.map(function (controller) {
@@ -198,7 +198,7 @@ Dungeon.prototype = {
         game.removeDungeon(self.socket.id);
         if (game.dungeons.length === 0) {
           controller.destroy();
-          remove(controllers, findIndex(controllers, game.id));
+          removeByIndex(controllers, findIndex(controllers, game.id));
           console.log("Deleted: " + game.id);
         } else {
           game.removeDungeon(self.socket.id);
