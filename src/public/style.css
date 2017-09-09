@@ -104,7 +104,7 @@ main {
   justify-content: space-around;
 }
 
-#dungeon-preview {
+#ad-previews {
   width: 50%;
   margin-left: 50%;
   display: flex;
@@ -134,7 +134,7 @@ nav {
 nav ul li {
   margin-top: 0.3em;
 }
-
+/* 
 .ready {
   width: 20px;
   height: 20px;
@@ -145,9 +145,9 @@ nav ul li {
 
 .ready.btn-ready {
   background-color: rgb(133, 203, 46)
-}
+} */
 
-#home-menu {
+#home-ctrl {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -167,12 +167,12 @@ nav ul li {
   z-index: 999;
 }
 
-#home-menu h1 {
+#home-ctrl h1 {
   width: 100%;
   text-align: center;
 }
 
-#home-menu section {
+#home-ctrl section {
   min-width: 20em;
   min-height: 15em;
   display: flex;
@@ -182,16 +182,16 @@ nav ul li {
   justify-content: space-between;
 }
 
-#home-menu section > * {
+#home-ctrl section > * {
   width: 80%;
 }
 
-#home-menu section input {
+#home-ctrl section input {
   margin-bottom: 0.5em;
   text-align: right;
 }
 
-#home-menu button {
+#home-ctrl button {
   margin: 1em;
   width: 60%;
   padding: 0;
@@ -201,7 +201,7 @@ main > * {
   width: 48%;
 }
 
-.area-container {
+.d-container {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -211,41 +211,37 @@ main > * {
   height: 100%;
 }
 
-#my-dungeon .area-container {
+#m-dungeon .d-container {
   flex-direction: row-reverse;
 }
 
-#adversaries-dungeon .area-container {
+#a-dungeons .d-container {
   display: none;
 }
 
-#adversaries-dungeon .area-container.selected {
+#a-dungeons .d-container.selected {
   animation: selected 0.2s 1 ease-in-out;
   display: flex;
 }
 
-.area-container .ready {
-  margin: 0 5%;
-}
-
-.area-container h1 {
+.d-container h1 {
   font-size: 18px;
   width: 80%;
   text-align: center;
   margin: 0.5em;
 }
 
-.area-container .status-container {
+.d-container .status-container {
   width: 15%;
 }
 
-.area-container .status-container > * {
+.d-container .status-container > * {
   text-align: center;
   vertical-align: middle;
   margin: auto;
 }
 
-.area-container .area {
+.d-container .area {
   position: relative;
   overflow: hidden;
   width: auto;
@@ -304,7 +300,7 @@ main > * {
   height: auto;
 }
 
-.dungeon-preview-container .dungeon-name {
+.dungeon-preview-container h2 {
   width: 90%;
   text-align: center;
 }
@@ -362,7 +358,7 @@ main > * {
   background-image: url('dynamite.gif');
 }
 
-#my-dungeon .dynamite::before {
+#m-dungeon .dynamite::before {
   display: none;
 }
 

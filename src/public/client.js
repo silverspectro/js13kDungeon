@@ -218,9 +218,7 @@
     this.game;
     this.dungeonsUI = [];
     this.selectedOption = STATE_WALL;
-    this.adversaries = [];
-    this.adversariesPreview = [];
-    this.adversaryIndex = 0;
+    this.selectedAdversary;
     this.keypressed = false;
 
     var self = this;
@@ -235,28 +233,33 @@
       this.game = game;
       this.updateUI();
     },
-    selectAdversary: function(index) {
+    selectAdversary: function (adversaryId) {
       var self = this;
-      this.adversaries.forEach(function (adversary, ind) {
-        if (index !== ind) {
-          adversary.classList.remove('selected');
-          self.adversariesPreview[ind].classList.remove('selected');
-        } else {
-          adversary.classList.add('selected');
-          self.adversariesPreview[ind].classList.add('selected');
-        }
-      });
+
+      var selectedDungeonUI = find(self.dungeonsUI, self.selectedAdversary);
+      if(selectedDungeonUI) {
+        selectedDungeonUI.dungeonElt.classList.remove('selected');
+        selectedDungeonUI.previewElt.classList.remove('selected');
+      }
+
+      self.selectedAdversary = adversaryId;
+      selectedDungeonUI = find(self.dungeonsUI, adversaryId);
+      if(selectedDungeonUI) {
+        selectedDungeonUI.dungeonElt.classList.add('selected');
+        selectedDungeonUI.previewElt.classList.add('selected');
+      }
     },
-    navigateThroughAdversaries: function(event) {
-      var aIndex = this.adversaryIndex;
+    navigateThroughAdversaries: function (event) {
+      // @todo heavy, how to make it simpler ?
+      var aIndex = findIndex(this.dungeonsUI, this.selectedAdversary);
       if (event.deltaY < 0) {
         aIndex++;
-        aIndex = (aIndex > this.adversaries.length - 1) ? 0 : aIndex;
+        aIndex = (aIndex > this.dungeonsUI.length - 1) ? 0 : aIndex;
       } else {
         aIndex--;
-        aIndex = (aIndex < 0) ? (this.adversaries.length - 1) : aIndex;
+        aIndex = (aIndex < 0) ? (this.dungeonsUI.length - 1) : aIndex;
       }
-      this.selectAdversary(aIndex);
+      this.selectAdversary(this.dungeonsUI[aIndex].id);
     },
     deleteDungeonUI: function (dungeonId) {
       var dungeonUI = getElementById(dungeonId);
@@ -283,157 +286,33 @@
       });
     },
     addDungeonUI: function (dungeon) {
-
       var self = this;
-      var uiDungeon = {
-        id: dungeon.id,
-        area: [],
-      };
+      var uiDungeon = new UiDungeon(self, dungeon);
 
-      // initialize the UI elements
-
-      var areaContainer = createUIElement('div', {
-        class: 'area-container',
-        id: dungeon.id,
-      });
-      var dungeonName = createUIElement('h1', {
-        class: 'dungeon-name',
-      });
-      dungeonName.innerHTML = dungeon.name;
-      var area = createUIElement('div', {
-        class: 'area',
-      });
-      var statusContainer = createUIElement('div', {
-        class: 'status-container',
-      });
-      var lifeCount = createUIElement('p', {
-        class: 'life-count',
-      });
-      var moneyCount = createUIElement('p', {
-        class: 'money-count',
-      });
-      var readyButton = createUIElement('div', {
-        class: 'ready',
-        'data-dungeon-id': dungeon.id,
-      }, {
-        click: function (event) {
-          var dungeonId = event.target.getAttribute('data-dungeon-id');
-          if (dungeonId == self.id) socket.emit(GAME_EVENT_START);
-        },
-      });
-
-      for (var l = 0; l < 3; l++) {
-        area.appendChild(createUIElement('div', {
-          class: 'light',
-        }))
-      };
-
-      // Create the area DOM squares
-      // and associate it to the new uiDungeon
-      // for update loop and performance
-
-      var style = getCellSize(dungeon.area);
-
-      for(var row = 0; row < dungeon.area.rows; row++) {
-        var areaRow = [];
-        var randomBGRow = [];
-
-        var htmlRow = createUIElement('div', { class: "row" });
-        area.appendChild(htmlRow);
-
-        for(var column = 0; column < dungeon.area.columns; column++) {
-
-          var randomBGSquare = randomiseSquare();
-
-          var square = createUIElement('div', {
-            class: mapStateToClass(dungeon.area.states[row][column].state) + randomBGSquare,
-            'data-area-x': column,
-            'data-area-y': row,
-            'data-dungeon-id': dungeon.id,
-          }, {
-            click: self.applyOptionEvent.bind(self),
-          });
-
-          applyStyleOn(square, style)
-
-          htmlRow.appendChild(square);
-          areaRow.push(square);
-          randomBGRow.push(randomBGSquare);
-        }
-
-        uiDungeon.area.push(areaRow);
-        randomBGMap.push(randomBGRow);
-      }
-
-      // append the elements to the DOM
-      areaContainer.appendChild(readyButton);
-      areaContainer.appendChild(dungeonName);
-      statusContainer.appendChild(lifeCount);
-      statusContainer.appendChild(moneyCount);
-
-      areaContainer.appendChild(statusContainer);
-      areaContainer.appendChild(area);
-
-      // map the element to the uiDungeon
-      uiDungeon.lifeCount = lifeCount;
-      uiDungeon.moneyCount = moneyCount;
-      uiDungeon.readyButton = readyButton;
-      this.dungeonsUI.push(uiDungeon);
+      self.dungeonsUI.push(uiDungeon);
 
       if (dungeon.id == self.id) { // not adversary
-
-        getElementById('my-dungeon').appendChild(areaContainer);
+        getElementById('m-dungeon').appendChild(uiDungeon.dungeonElt);
 
       } else { // adversary
+        // console.log(uiDungeon);
+        getElementById('a-dungeons').appendChild(uiDungeon.dungeonElt);
+        getElementById('ad-previews').appendChild(uiDungeon.previewElt);
 
-        getElementById('adversaries-dungeon').appendChild(areaContainer);
-        this.adversaries.push(areaContainer);
-
-        // creating dungeon preview for opponents
-
-        var previewContainer = createUIElement('div', {
-          class: 'dungeon-preview-container',
-          id: 'preview-' + dungeon.id,
-          'data-dungeon-id': dungeon.id,
-        });
-        var previewLifeCount = createUIElement('p', {
-          class: 'life-count',
-        });
-        var previewMoneyCount = createUIElement('p', {
-          class: 'money-count',
-        });
-        var previewDungeonName = createUIElement('p', {
-          class: 'dungeon-name',
-        });
-        previewDungeonName.innerHTML = dungeon.id;
-
-        previewContainer.appendChild(previewDungeonName);
-        previewContainer.appendChild(previewLifeCount);
-        previewContainer.appendChild(previewMoneyCount);
-
-        uiDungeon.previewLifeCount = previewLifeCount;
-        uiDungeon.previewMoneyCount = previewMoneyCount;
-
-        getElementById('dungeon-preview').appendChild(previewContainer);
-
-        this.adversariesPreview.push(previewContainer);
-
-        var ind = this.adversariesPreview.length - 1;
-
-        on(previewContainer, 'click', function (event) {
+        on(uiDungeon.previewElt, 'click', function (event) {
           event.preventDefault();
           event.stopPropagation();
-          self.selectAdversary(ind);
+          self.selectAdversary(uiDungeon.id);
         });
-      }
 
-      return uiDungeon;
+        if(!self.selectedAdversary) self.selectAdversary(dungeon.id); // ensure first join is selected
+      }
     },
     updateUI: function () {
       var self = this;
 
       // remove dungeons from ui if not in the game anymore
-      this.dungeonsUI.forEach(function (dungeonUi, dungeonUiIndex) {
+      this.dungeonsUI.forEach(function (dungeonUi) {
         if (!find(self.game.dungeons, dungeonUi.id)) {
           self.deleteDungeonUI(dungeonUi.id);
         }
@@ -443,40 +322,8 @@
       this.game.dungeons.forEach(function (dungeon) {
         var dungeonUI = find(self.dungeonsUI, dungeon.id);
 
-        // create if doesn't exist
-        if (!dungeonUI) {
-          dungeonUI = self.addDungeonUI(dungeon);
-        }
-
-        // update if exists
-        dungeonUI.lifeCount.innerHTML = dungeon.life;
-        dungeonUI.moneyCount.innerHTML = dungeon.money;
-
-        // for adversary previews
-        if (dungeon.id != self.id) {
-          dungeonUI.previewLifeCount.innerHTML = dungeon.life;
-          dungeonUI.previewMoneyCount.innerHTML = dungeon.money;
-        }
-
-        // ready button
-        // console.log(dungeon);
-        (dungeon.status === D_STATUS_READY) ?
-        dungeonUI.readyButton.classList.add('btn-ready'):
-          dungeonUI.readyButton.classList.remove('btn-ready');
-
-        // area
-        var style = getCellSize(dungeon.area);
-
-        // TODO : it won't work if area dimension changed
-        dungeon.area.states.forEach(function (row, rowIndex) {
-          row.forEach(function (column, columnIndex) {
-            applyAttributesOn(dungeonUI.area[rowIndex][columnIndex], {
-              class: mapStateToClass(column.state) + randomBGMap[rowIndex][columnIndex],
-            });
-            applyStyleOn(dungeonUI.area[rowIndex][columnIndex], style);
-          });
-        });
-
+        // update if exists, else create
+        dungeonUI ? dungeonUI.updateFromDungeon(dungeon) : self.addDungeonUI(dungeon);
       });
     },
   }
@@ -485,8 +332,7 @@
 
   // client environment variables
   var elementsOn = {},
-    randomBGMap = [],
-    homeMenu = getElementById('home-menu'),
+    homeMenu = getElementById('home-ctrl'),
     gamesSelect = getElementById('gl'),
     optionList = getElementById('option-list'),
     optionListUl = optionList.getElementsByTagName('ul')[0],
@@ -512,10 +358,9 @@
     });
 
     // update UI anytime game edited or play updated
+    // we have to create controller when joining a game
     socket.on(GAME_EVENT_EDITED, function (updatedGame) {
       controller ? controller.updateGame(updatedGame) : initClientController(updatedGame);
-      // we have to create controller when joining a game
-      controller.selectAdversary(controller.adversaryIndex);
       updateGameOptions();
     });
 
@@ -604,18 +449,191 @@
           else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
 
           if (direction) socket.emit(PLAY_EVENT_MOVE, direction);
-          timeout = window.setTimeout(function (){
+          timeout = window.setTimeout(function () {
             controller.keypressed = false;
           }, 100);
         }
       }
     });
 
-    window.addEventListener('keyup', function() {
+    window.addEventListener('keyup', function () {
       clearInterval(timeout);
-      if(controller) controller.keypressed = false;
+      if (controller) controller.keypressed = false;
     });
   }
+
+
+  /* -------- UiDungeon Class -------- */
+
+  /**
+   * UiDungeon Class
+   * @param {Dungeon} dungeon
+   */
+  function UiDungeon(controller, dungeon) {
+    this.id = dungeon.id;
+    this.controller = controller; /// @todo find generic way to bind events
+    this.randomBGMap = [];
+    
+    // Dom area cells elements mapped in order to make update fast & simple
+    this.area = [];
+
+    // Dom elements mapped in order to make update simple
+    this.dungeonElt;
+    this.previewElt;
+    this.lifeCountElt;
+    this.moneyCountElt;
+    this.previewLifeCountElt;
+    this.previewMoneyCountElt;
+
+    // initialize dom elements
+    // @TODO make it generic
+    this.init(dungeon);
+  }
+
+  UiDungeon.prototype = {
+    updateFromDungeon: function (dungeon) {
+      var self = this;
+
+      self.style = getCellSize(dungeon.area);
+      
+      self.lifeCountElt.innerHTML = dungeon.life;
+      self.moneyCountElt.innerHTML = dungeon.money;
+
+      self.previewLifeCountElt.innerHTML = dungeon.life;
+      self.previewMoneyCountElt.innerHTML = dungeon.money;
+      
+      // TODO : it won't work if area dimension changed
+      dungeon.area.states.forEach(function (row, rowIndex) {
+        row.forEach(function (column, columnIndex) {
+          applyAttributesOn(self.area[rowIndex][columnIndex], {
+            class: mapStateToClass(column.state) + self.randomBGMap[rowIndex][columnIndex],
+          });
+          applyStyleOn(self.area[rowIndex][columnIndex], self.style);
+        });
+      });
+    },
+    // createArea: function () {
+    //   throw new Error("TODO");
+    // },
+    // delete: function () {
+    //   throw new Error("TODO");
+    // },
+    init: function (dungeon) {
+      // build dom elements and map them
+      this.createDungeonElt(dungeon);
+      this.createPreviewElt(dungeon);
+      
+      // set dom elements values
+      this.updateFromDungeon(dungeon);
+    },
+    createDungeonElt: function (dungeon) {
+      var self = this;
+
+      this.dungeonElt = createUIElement('div', {
+        class: 'd-container',
+        id: dungeon.id,
+      });
+
+      var dungeonName = createUIElement('h1');
+      dungeonName.innerHTML = dungeon.name;
+
+      var area = createUIElement('div', {
+        class: 'area',
+      });
+      var statusContainer = createUIElement('div', {
+        class: 'status-container',
+      });
+      var lifeCount = createUIElement('p', {
+        class: 'life-count',
+      });
+      var moneyCount = createUIElement('p', {
+        class: 'money-count',
+      });
+
+      for (var l = 0; l < 3; l++) {
+        area.appendChild(createUIElement('div', {
+          class: 'light',
+        }))
+      };
+
+      // Create the area DOM squares and associate it to uiDungeon
+      // (update loop and performance)
+
+      for (var row = 0; row < dungeon.area.rows; row++) {
+        var areaRow = [];
+        var randomBGRow = [];
+
+        var htmlRow = createUIElement('div', {
+          class: "row"
+        });
+        area.appendChild(htmlRow);
+
+        for (var column = 0; column < dungeon.area.columns; column++) {
+
+          var randomBGSquare = randomiseSquare();
+
+          var square = createUIElement('div', {
+            class: mapStateToClass(dungeon.area.states[row][column].state) + randomBGSquare,
+            'data-area-x': column,
+            'data-area-y': row,
+            'data-dungeon-id': dungeon.id,
+          }, {
+            click: self.controller.applyOptionEvent.bind(self),
+          });
+
+          applyStyleOn(square, self.style)
+
+          htmlRow.appendChild(square);
+          areaRow.push(square);
+          randomBGRow.push(randomBGSquare);
+        }
+
+        self.area.push(areaRow);
+        self.randomBGMap.push(randomBGRow);
+      }
+
+      // append the elements to the DOM
+      statusContainer.appendChild(lifeCount);
+      statusContainer.appendChild(moneyCount);
+
+      self.dungeonElt.appendChild(dungeonName);
+      self.dungeonElt.appendChild(statusContainer);
+      self.dungeonElt.appendChild(area);
+
+      // map the element to uiDungeon
+      self.lifeCountElt = lifeCount;
+      self.moneyCountElt = moneyCount;
+
+    },
+    createPreviewElt: function (dungeon) {
+      var self = this;
+
+      self.previewElt = createUIElement('div', {
+        class: 'dungeon-preview-container',
+        id: 'preview-' + dungeon.id,
+        'data-dungeon-id': dungeon.id,
+      });
+      var previewLifeCount = createUIElement('p', {
+        class: 'life-count',
+      });
+      var previewMoneyCount = createUIElement('p', {
+        class: 'money-count',
+      });
+      var previewDungeonName = createUIElement('h2');
+      previewDungeonName.innerHTML = dungeon.id;
+
+      self.previewElt.appendChild(previewDungeonName);
+      self.previewElt.appendChild(previewLifeCount);
+      self.previewElt.appendChild(previewMoneyCount);
+
+      self.previewLifeCountElt = previewLifeCount;
+      self.previewMoneyCountElt = previewMoneyCount;
+    },
+  }
+
+  /* -------- End UiDungeon Class -------- */
+
+
 
   /**
    * Client module init
