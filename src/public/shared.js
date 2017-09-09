@@ -6,8 +6,9 @@ var STATE_DEFAULT  = 1;   // 0x 00000001
 var STATE_PLAYER   = 2;   // 0x 00000010
 var STATE_WALL     = 4;   // 0x 00000100
 var STATE_DYNAMITE = 8;   // 0x 00001000
-var STATE_RHUM     = 16;  // 0x 00100000
-var STATE_MONEY    = 32;  // 0x 01000000
+var STATE_RHUM     = 16;  // 0x 00010000
+var STATE_MONEY    = 32;  // 0x 00100000
+var STATE_BOUM     = 64;  // 0x 01000000
 
 var bonusMapState = [STATE_RHUM, STATE_MONEY];
 

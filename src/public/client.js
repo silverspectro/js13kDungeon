@@ -51,6 +51,7 @@
     if( state & STATE_DYNAMITE ) { cssClass += " dynamite"; }
     if( state & STATE_MONEY ) { cssClass += " money"; }
     if( state & STATE_RHUM ) { cssClass += " rhum"; }
+    if( state & STATE_BOUM ) { cssClass += " boum"; }
     
     return cssClass;
   }
@@ -386,6 +387,12 @@
           }, {
             click: self.applyOptionEvent.bind(self),
           });
+
+          var boum = createUIElement('div', {
+            class: 'boum',
+          });
+
+          square.appendChild(boum);
           
           htmlRow.appendChild(square);
           areaRow.push(square);
