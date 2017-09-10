@@ -71,7 +71,9 @@ ServerController.prototype = {
 
       if (!game) {
         game = new Game(self.socket, payload.name || self.id, new Config(payload) /*, options*/ );
-        var dungeon = new Dungeon(self.id, game.configTemplate, game.name);
+        // console.log(payload, game);
+        // var dungeon = new Dungeon(self.id, game.configTemplate, game.name);
+        var dungeon = new Dungeon(self.id, game.configTemplate);
 
         game.addDungeon(dungeon);
         games.push(game);
@@ -161,7 +163,8 @@ ServerController.prototype = {
       if (game && (game.status === G_STATUS_SETUP)) {
         var dungeon = find(game.dungeons, self.id);
         dungeon.status = D_STATUS_READY;
-        dungeon.name = payload.name || self.id;
+        dungeon.name = payload.name || ( dungeon.name || self.id );
+        // console.log(dungeon, game);
         game.startIfReady();
         broadcast(game, GAME_EVENT_EDITED, game.toJSON());
       }
@@ -194,9 +197,9 @@ function Game(socket, name, configTemplate, options) {
 }
 
 Game.prototype = {
-  finish: function () {
-    this.status = isWin ? G_STATUS_WIN : G_STATUS_LOSE;
-  },
+  // finish: function () {
+  //   this.status = isWin ? G_STATUS_WIN : G_STATUS_LOSE;
+  // },
   removeDungeon: function (dungeonId) {
     var dungeonIndex = findIndex(this.dungeons, dungeonId);
     if (dungeonIndex >= 0) {
@@ -233,8 +236,9 @@ Game.prototype = {
   },
   stop: function () {
     var self = this;
+    self.status = G_STATUS_FINISHED;
     clearInterval(self.clock);
-    broadcast(self, GAME_EVENT_FINISHED);
+    broadcast(self, GAME_EVENT_FINISHED, self.toJSON());
     setTimeout(function () {
       self.socket.disconnect(false)
     }, 60000); // force disconnect after 1 minute
@@ -283,7 +287,8 @@ Game.prototype = {
   toJSON: function () {
     return {
       id: this.id,
-      time: this.time,
+      // time: this.time,
+      name: this.name,
       status: this.status,
       dungeons: this.dungeons.map(function (dungeon) {
         return dungeon.toJSON ? dungeon.toJSON() : dungeon;
@@ -515,6 +520,7 @@ Dungeon.prototype = {
   toJSON: function () {
     return {
       id: this.id,
+      name: this.name,
       area: this.area.toJSON(),
       life: this.life,
       money: this.money,
@@ -528,6 +534,97 @@ Dungeon.prototype = {
 };
 
 /* -------- End Dungeon Class -------- */
+
+
+/* -------- Area Class -------- */
+
+/**
+ * Area Class
+ * 
+ * @param {Int} columns
+ * @param {Int} rows
+ * 
+ * @notice Please be carefull with indexes x et y are inversed according common sens in states storage object
+ */
+function Area(columns, rows) {
+  this.reset(columns, rows);
+}
+
+Area.prototype = {
+  reset: function (columns, rows) {
+    this.columns = columns || 0;
+    this.rows = rows || 0;
+    this.states = [];
+    for(var row = 0; row < this.rows; row++) {
+      this.states.push([]);
+      for(var column = 0; column < this.columns; column++) {
+        this.states[row].push({state: STATE_DEFAULT});
+      }
+    }
+  },
+  getState: function (x, y) {
+    return this.states[y][x].state;
+  },
+  setState: function (x, y, state) {
+    this.states[y][x].state = state;
+  },
+  toJSON: function() {
+    return {
+      columns: this.columns,
+      rows: this.rows,
+      states: this.states,
+    }
+  }
+}
+
+/* -------- End Area Class -------- */
+
+
+
+/* -------- Config Class -------- */
+
+/**
+ * Config Class
+ * @param {Config} Config
+ */
+function Config(config) {
+  this.fromJSON(config);
+}
+
+Config.prototype = {
+  // override if given; initialize with default value if not given and not defined 
+  fromJSON: function (config) {
+    config = config || {};
+    this.dynamiteFeedback = config.dynamiteFeedback || (this.dynamiteFeedback || 3);
+    this.dynamiteCost = config.dynamiteCost || (this.dynamiteCost || 15);
+    this.wallCost = config.wallCost || (this.wallCost || 5);
+    this.timeLimit = config.timeLimit || (this.timeLimit || 5);
+    this.timeLimitMalus = config.timeLimitMalus || (this.timeLimitMalus || 1);
+    this.bonusInterval = config.bonusInterval || (this.bonusInterval || 5);
+    this.rhumBonusValue = config.rhumBonusValue || (this.rhumBonusValue || 10);
+    this.moneyBonusValue = config.moneyBonusValue || (this.moneyBonusValue || 15);
+    this.areaColumns = config.areaColumns || (this.areaColumns || 11);
+    this.areaRows = config.areaRows || (this.areaRows || 15);
+  },
+  toJSON: function () {
+    return {
+      dynamiteFeedback: this.dynamiteFeedback,
+      dynamiteCost: this.dynamiteCost,
+      wallCost: this.wallCost,
+      timeLimit: this.timeLimit,
+      timeLimitMalus: this.timeLimitMalus,
+      bonusInterval: this.bonusInterval,
+      rhumBonusValue: this.rhumBonusValue,
+      moneyBonusValue: this.moneyBonusValue,
+      areaColumns: this.areaColumns,
+      areaRows: this.areaRows,
+    }
+  }
+}
+
+/* -------- End Config Class -------- */
+
+
 
 /**
  * Socket.IO on connect event

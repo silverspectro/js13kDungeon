@@ -312,14 +312,14 @@
       var self = this;
 
       // remove dungeons from ui if not in the game anymore
-      this.dungeonsUI.forEach(function (dungeonUi) {
+      self.dungeonsUI.forEach(function (dungeonUi) {
         if (!find(self.game.dungeons, dungeonUi.id)) {
           self.deleteDungeonUI(dungeonUi.id);
         }
       });
 
       // for each game dungeon, update ui if exists, create if they don't
-      this.game.dungeons.forEach(function (dungeon) {
+      self.game.dungeons.forEach(function (dungeon) {
         var dungeonUI = find(self.dungeonsUI, dungeon.id);
 
         // update if exists, else create
@@ -332,6 +332,7 @@
         toggle(myDungeon, false);
         toggle(adversariesDungeons, false);
         toggle(setupMenu, true);
+        toggle(optionList, false);
         
       } else if(self.game.status == G_STATUS_RUNNING) {
         toggle(homeMenu, false);
@@ -344,6 +345,7 @@
         toggle(myDungeon, false);
         toggle(adversariesDungeons, false);
         toggle(setupMenu, false);
+        toggle(optionList, false);
         
       } else {
         throw new Error("Unknown game status.");
@@ -398,15 +400,15 @@
     /// @TODO shouldn't we manage this case ?
     // socket.on("error", function () {});
 
-    socket.on(PLAY_EVENT_WIN, function (dungeonPayload) {
-      throw new Error("TODO");
-    });
-    socket.on(PLAY_EVENT_LOST, function (dungeonPayload) {
-      throw new Error("TODO");
-    });
+    // socket.on(PLAY_EVENT_WIN, function (dungeonPayload) {
+    //   throw new Error("TODO");
+    // });
+    // socket.on(PLAY_EVENT_LOST, function (dungeonPayload) {
+    //   throw new Error("TODO");
+    // });
 
-    socket.on(GAME_EVENT_FINISHED, function () {
-      alert('Game finished');
+    socket.on(GAME_EVENT_FINISHED, function (updatedGame) {
+      controller.updateGame(updatedGame);
     });
 
     socket.on('disconnect', function () {
@@ -503,7 +505,6 @@
    */
   function UiDungeon(controller, dungeon) {
     this.id = dungeon.id;
-    this.controller = controller; /// @todo find generic way to bind events
     this.randomBGMap = [];
     
     // Dom area cells elements mapped in order to make update fast & simple
@@ -512,6 +513,7 @@
     // Dom elements mapped in order to make update simple
     this.dungeonElt;
     this.previewElt;
+    this.dungeonNameElt;
     this.lifeCountElt;
     this.moneyCountElt;
     this.previewLifeCountElt;
@@ -528,6 +530,7 @@
 
       self.style = getCellSize(dungeon.area);
       
+      self.dungeonNameElt.innerHTML = dungeon.name;
       self.lifeCountElt.innerHTML = dungeon.life;
       self.moneyCountElt.innerHTML = dungeon.money;
 
@@ -610,7 +613,7 @@
             'data-area-y': row,
             'data-dungeon-id': dungeon.id,
           }, {
-            click: self.controller.applyOptionEvent.bind(self),
+            click: controller.applyOptionEvent.bind(self),
           });
 
           applyStyleOn(square, self.style)
@@ -633,6 +636,7 @@
       self.dungeonElt.appendChild(area);
 
       // map the element to uiDungeon
+      self.dungeonNameElt = dungeonName;
       self.lifeCountElt = lifeCount;
       self.moneyCountElt = moneyCount;
 
