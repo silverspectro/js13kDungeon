@@ -147,7 +147,7 @@ nav ul li {
   background-color: rgb(133, 203, 46)
 } */
 
-#home-ctrl {
+#home-menu {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -167,12 +167,12 @@ nav ul li {
   z-index: 999;
 }
 
-#home-ctrl h1 {
+#home-menu h1 {
   width: 100%;
   text-align: center;
 }
 
-#home-ctrl section {
+#home-menu section, #m-setup {
   min-width: 20em;
   min-height: 15em;
   display: flex;
@@ -182,16 +182,16 @@ nav ul li {
   justify-content: space-between;
 }
 
-#home-ctrl section > * {
+#home-menu section > * {
   width: 80%;
 }
 
-#home-ctrl section input {
+#home-menu section input {
   margin-bottom: 0.5em;
   text-align: right;
 }
 
-#home-ctrl button {
+#home-menu button {
   margin: 1em;
   width: 60%;
   padding: 0;

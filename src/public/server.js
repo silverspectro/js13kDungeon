@@ -155,12 +155,13 @@ ServerController.prototype = {
       }
     });
 
-    this.socket.on(GAME_EVENT_START, function () {
+    this.socket.on(GAME_EVENT_START, function (payload) {
       var game = findGameByDungeonId(self.id);
 
       if (game && (game.status === G_STATUS_SETUP)) {
         var dungeon = find(game.dungeons, self.id);
         dungeon.status = D_STATUS_READY;
+        dungeon.name = payload.name || self.id;
         game.startIfReady();
         broadcast(game, GAME_EVENT_EDITED, game.toJSON());
       }

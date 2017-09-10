@@ -96,15 +96,12 @@
   }
 
   /// @TODO : enhance according new status behavior
-  function toggle(element, force) {
-    elementsOn[element.id] = element.className.includes('off');
-    if (elementsOn[element.id] && !force) {
-      element.classList.remove('off');
-    } else {
-      element.classList.add('off');
-    }
+  function toggle(element, setOn) {
+    setOn = (typeof(setOn) === "boolean") ? setOn : element.className.includes('off');
+    elementsOn[element.id] = setOn;
+    setOn ? element.classList.remove('off') : element.classList.add('off');
   }
-
+  
   function updateGamesList(games) {
     wipeElementsFrom(gamesSelect);
     games.forEach(function (game) {
@@ -200,8 +197,6 @@
   function initClientController(game) {
     controller = new ClientController(socket);
     controller.updateGame(game);
-    toggle(homeMenu, true);
-    toggle(optionList);
   }
 
   /* -------- End General Functions -------- */
@@ -236,6 +231,8 @@
     selectAdversary: function (adversaryId) {
       var self = this;
 
+      if(self.id == adversaryId) throw new Error("Invalid id selected for adversary.");
+
       var selectedDungeonUI = find(self.dungeonsUI, self.selectedAdversary);
       if(selectedDungeonUI) {
         selectedDungeonUI.dungeonElt.classList.remove('selected');
@@ -250,15 +247,19 @@
       }
     },
     navigateThroughAdversaries: function (event) {
-      // @todo heavy, how to make it simpler ?
+      var dungeonListLength = this.dungeonsUI.length;
+      if(dungeonListLength < 2) return;
+
+      // @todo : too heavy, how to make it simpler ?
       var aIndex = findIndex(this.dungeonsUI, this.selectedAdversary);
-      if (event.deltaY < 0) {
-        aIndex++;
-        aIndex = (aIndex > this.dungeonsUI.length - 1) ? 0 : aIndex;
-      } else {
-        aIndex--;
-        aIndex = (aIndex < 0) ? (this.dungeonsUI.length - 1) : aIndex;
-      }
+      var selfIndex = findIndex(this.dungeonsUI, this.id);
+
+      do {
+        (event.deltaY < 0) ? aIndex++ : aIndex--;
+        aIndex = (aIndex > dungeonListLength - 1) ? 0 : aIndex;
+        aIndex = (aIndex < 0) ? (dungeonListLength - 1) : aIndex;
+      } while (aIndex == selfIndex);
+
       this.selectAdversary(this.dungeonsUI[aIndex].id);
     },
     deleteDungeonUI: function (dungeonId) {
@@ -280,7 +281,7 @@
       var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
       socket.emit(PLAY_EVENT_APPLY, {
         opponentId: dungeonId,
-        state: this.selectedOption,
+        state: controller.selectedOption,
         x: x,
         y: y,
       });
@@ -295,7 +296,6 @@
         getElementById('m-dungeon').appendChild(uiDungeon.dungeonElt);
 
       } else { // adversary
-        // console.log(uiDungeon);
         getElementById('a-dungeons').appendChild(uiDungeon.dungeonElt);
         getElementById('ad-previews').appendChild(uiDungeon.previewElt);
 
@@ -325,6 +325,30 @@
         // update if exists, else create
         dungeonUI ? dungeonUI.updateFromDungeon(dungeon) : self.addDungeonUI(dungeon);
       });
+
+      // update panel according game status
+      if(self.game.status == G_STATUS_SETUP) {
+        toggle(homeMenu, false);
+        toggle(myDungeon, false);
+        toggle(adversariesDungeons, false);
+        toggle(setupMenu, true);
+        
+      } else if(self.game.status == G_STATUS_RUNNING) {
+        toggle(homeMenu, false);
+        toggle(myDungeon, true);
+        toggle(adversariesDungeons, true);
+        toggle(setupMenu, false);
+        
+      } else if(self.game.status == G_STATUS_FINISHED) {
+        toggle(homeMenu, false);
+        toggle(myDungeon, false);
+        toggle(adversariesDungeons, false);
+        toggle(setupMenu, false);
+        
+      } else {
+        throw new Error("Unknown game status.");
+      }
+
     },
   }
 
@@ -332,7 +356,10 @@
 
   // client environment variables
   var elementsOn = {},
-    homeMenu = getElementById('home-ctrl'),
+    homeMenu = getElementById('home-menu'),
+    setupMenu = getElementById('m-setup'),
+    myDungeon = getElementById('m-dungeon'),
+    adversariesDungeons = getElementById('a-dungeons'),
     gamesSelect = getElementById('gl'),
     optionList = getElementById('option-list'),
     optionListUl = optionList.getElementsByTagName('ul')[0],
@@ -355,6 +382,10 @@
     socket.on(GAME_EVENT_CREATED, function (newGame) {
       initClientController(newGame);
       updateGameOptions();
+    });
+
+    socket.on(GAME_EVENT_STARTED, function () {
+      toggle(optionList);
     });
 
     // update UI anytime game edited or play updated
@@ -387,7 +418,6 @@
         switch (button.id) {
           case GAME_EVENT_CREATE:
             socket.emit(button.id, {
-              gameId: socket.id,
               areaColumns: getValueById('ac'),
               areaRows: getValueById('ar'),
               name: getValueById('gn')
@@ -396,9 +426,13 @@
 
           case GAME_EVENT_JOIN:
             socket.emit(button.id, {
-              playerId: socket.id,
               gameId: getValueById('gl'),
-              dungeonName: getValueById('gn'),
+            });
+            break;
+
+          case GAME_EVENT_START:
+            socket.emit(button.id, {
+              name: getValueById('dn'),
             });
             break;
 
@@ -428,10 +462,8 @@
       event.stopPropagation();
       toggle(optionList);
       if (elementsOn[optionList.id]) {
-        var x = mouseX;
-        var y = mouseY;
-        optionList.style.left = x + 'px';
-        optionList.style.top = y + 'px';
+        optionList.style.left = mouseX + 'px';
+        optionList.style.top = mouseY + 'px';
       }
     });
 
