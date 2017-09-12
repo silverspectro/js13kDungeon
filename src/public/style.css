@@ -154,7 +154,7 @@ nav ul li {
   left: 50%;
   transform: translate3d(-50%, -50%, 0);
 
-  z-index: 999;
+  z-index: 900;
 }
 
 h1, h2 {
@@ -408,7 +408,7 @@ section .area {
   background-image: url('money.gif');
 }
 
-/* .icon {
+.icon {
   display: inline-block;
   width: 1.5em;
   height: 1.5em;
@@ -425,7 +425,7 @@ section .area {
 
 .icon.money:after {
   content: none;
-} */
+}
 
 .light {
   pointer-events: none;
@@ -485,3 +485,35 @@ section .area {
   }
 }
 
+#modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  padding: 2.5em 4em;
+  background-color: white;
+  box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
+  transform: translate(-50%, -50%) scale(0.01, 0.01) rotate(3600deg);
+  z-index: 999;
+  transition: transform 0.4s 0s cubic-bezier(.74,.33,.96,.64);
+}
+
+#modal.modal-in {
+  transform: translate(-50%, -50%) scale(1.05, 1.05) rotate(-30deg);
+}
+
+#modal.modal-out {
+  transition-duration: 1.5s;
+  transition-timing-function: cubic-bezier(.99,.27,.86,1.08);
+  transform: translate(-50%, 500%) scale(1, 1) rotate(20deg);
+}
+
+#modal h1 {
+  text-align: center;
+}
+
+#modal p {
+  text-align: center;
+  margin: 2em 0.5em;
+}

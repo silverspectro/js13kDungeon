@@ -259,6 +259,8 @@
       }
     },
 
+
+
     navigateThroughAdversaries: function (event) {
       var dungeonListLength = this.dungeonsUI.length;
       if(dungeonListLength < 2) return;
@@ -350,6 +352,30 @@
 
       self.selectAdversary(self.selectedAdversary); // keep it at the end cause of status usage as class
     },
+    notify: function(message) {
+      var modal = createUIElement('div', {
+        id: 'modal',
+      }),
+      modalH = createUIElement('h1'),
+      modalP = createUIElement('p');
+
+      modalH.innerHTML = message.body;
+      modalP.innerHTML = message.title;
+
+      modal.appendChild(modalH);
+      modal.appendChild(modalP);
+      document.body.appendChild(modal);
+
+      window.setTimeout(function() {
+        modal.classList.add('modal-in');
+        window.setTimeout(function() {
+          modal.classList.add('modal-out');
+          window.setTimeout(function() {
+            document.body.removeChild(modal);
+          }, 3000)
+        }, 1500);
+      });
+    },
     updateUIFromSTatus: function () {
       var self = this;
 
@@ -397,7 +423,7 @@
     mouseY = 0;
 
   /**
-   * Binde Socket.IO and button events
+   * Bind Socket.IO and button events
    */
   function bind() {
 
@@ -408,6 +434,12 @@
     socket.on(GAME_EVENT_CREATED, function (newGame) {
       initClientController(newGame);
       updateGameOptions();
+      window.setTimeout(function() {
+        controller.notify({
+          title: 'Hello',
+          body: 'World !',
+        });
+      }, 500);
     });
 
     socket.on(GAME_EVENT_STARTED, function () {
