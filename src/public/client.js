@@ -357,6 +357,7 @@
       var selfDungeon = find(self.game.dungeons, self.id)
 
       mainCtrl.className = gameStatus;
+      myPanel.className = selfDungeon.status;
       setupMenu.className = selfDungeon.status;
 
       if(gameStatus == G_STATUS_SETUP) {

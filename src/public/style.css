@@ -162,7 +162,7 @@ h1, h2 {
   text-align: center;
 }
 
-#m-setup, #m-status, section, #a-panels section {
+#m-setup, #m-status, section, .gs_running .ds_lost section, #a-panels section {
   display: none;
   width: 100%;
   height: 100%;
@@ -203,7 +203,7 @@ main > * {
   justify-content: space-around;
 }
 
-.gs_setup #m-setup, .gs_running section, .gs_finished #m-status, #a-panels section.selected   {
+.gs_setup #m-setup, .gs_running section, .gs_finished #m-status, .ds_lost #m-status, #a-panels section.selected   {
   display: flex;
   justify-content: space-around;
   flex-wrap: wrap;
