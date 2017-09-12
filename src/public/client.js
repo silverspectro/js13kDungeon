@@ -52,7 +52,8 @@
     if( state & STATE_DYNAMITE ) { cssClass += " dynamite"; }
     if( state & STATE_MONEY ) { cssClass += " money"; }
     if( state & STATE_RHUM ) { cssClass += " rhum"; }
-
+    if( state & STATE_BOUM ) { cssClass += " boum"; }
+    
     return cssClass;
   }
 
@@ -624,6 +625,7 @@
         for (var column = 0; column < dungeon.area.columns; column++) {
 
           var randomBGSquare = randomiseSquare();
+          var boum = createUIElement('div', { class: 'boum', });
 
           var square = createUIElement('div', {
             class: mapStateToClass(dungeon.area.states[row][column].state) + randomBGSquare,
@@ -634,6 +636,7 @@
             click: controller.applyOptionEvent.bind(self),
           });
 
+          square.appendChild(boum);
           applyStyleOn(square, self.style)
 
           htmlRow.appendChild(square);

@@ -328,12 +328,12 @@ Dungeon.prototype = {
     var originalState = this.area.getState(x, y);
 
     if(this.id === bullyDungeon.id) {
-      if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL)
-        || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) ) {
+      if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL) && !(originalState & STATE_PLAYER)
+        || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) && !(originalState & STATE_PLAYER) ) {
         this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
         return true;
-      } else if ( (requestedState & STATE_DYNAMITE) && (originalState & STATE_WALL) && (bullyDungeon.money >= this.config.dynamiteCost)) {
-        this.area.setState(x, y, originalState & STATE_DEFAULT);
+      } else if ( (requestedState & STATE_DYNAMITE) && (originalState & STATE_WALL) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
+        this.area.setState(x, y, STATE_DEFAULT | STATE_BOUM);
         return true;
       }
     } else {
@@ -412,12 +412,12 @@ Dungeon.prototype = {
     }
 
     if( requestedPositionState & STATE_DYNAMITE ) {
-      this.applyTrap(direction);
+      this.applyTrap(originalX, originalY, direction);
     }
 
     return true;
   },
-  applyTrap: function (direction) {
+  applyTrap: function (x, y, direction) {
 
     var oppositeDirection;
     switch (direction) {
@@ -444,6 +444,8 @@ Dungeon.prototype = {
     for (var i = 0; i <= this.config.dynamiteFeedback; i++) {
       this.movePlayer(oppositeDirection);
     }
+
+    this.area.setState(x, y, STATE_BOUM);
   },
   createArea: function (columns, rows) {
     this.area.reset(columns, rows);
