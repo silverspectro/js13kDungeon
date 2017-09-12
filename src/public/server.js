@@ -268,6 +268,7 @@ Game.prototype = {
 
     if ((activeDungeonCount <= 1)) {
       if (lastActiveDungeon) {
+        lastActiveDungeon.status = D_STATUS_WON;
         broadcast(self, D_STATUS_WON, self.toJSON());
       }
       this.stop();
