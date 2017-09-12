@@ -27,9 +27,10 @@ function broadcast(game, eventName, payload) {
 /**
  * List Rooms for client and selection
  */
-function listRooms() {
-  /// TODO : allow listing by status
-  return games.map(function (game) {
+function listRooms(status) {
+  return games.filter( function (game) {
+    return game.status == status 
+  }).map(function (game) {
     return game.toJSON();
   });
 }
@@ -71,7 +72,6 @@ ServerController.prototype = {
 
       if (!game) {
         game = new Game(self.socket, payload.name || self.id, new Config(payload) /*, options*/ );
-        // var dungeon = new Dungeon(self.id, game.configTemplate, game.name);
         var dungeon = new Dungeon(self.id, game.configTemplate);
 
         game.addDungeon(dungeon);
@@ -84,7 +84,7 @@ ServerController.prototype = {
     });
 
     this.socket.on(GAME_EVENT_LIST, function () {
-      self.socket.emit(GAME_EVENT_LISTED, listRooms());
+      self.socket.emit(GAME_EVENT_LISTED, listRooms(G_STATUS_SETUP));
     });
 
     this.socket.on("disconnect", function () {
