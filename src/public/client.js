@@ -229,9 +229,20 @@
       this.game = game;
       this.updateUI();
     },
+    
     selectAdversary: function (adversaryId) {
       var self = this;
 
+      // ensure to always have adversaryId defined properly
+      /// @todo Too heavy ! Review this init process
+      adversaryId = adversaryId || self.selectedAdversary;
+      var iterator = 0;
+      while (!adversaryId && iterator < self.dungeonsUI.length) {
+        var currentDungeonId = self.dungeonsUI[iterator].id
+        if( currentDungeonId != self.id ) adversaryId = currentDungeonId;
+        iterator++;
+      }
+      
       if(self.id == adversaryId) throw new Error("Invalid id selected for adversary.");
 
       var selectedDungeonUI = find(self.dungeonsUI, self.selectedAdversary);
@@ -247,6 +258,7 @@
         selectedDungeonUI.dungeonPreviewElt.classList.add('selected');
       }
     },
+
     navigateThroughAdversaries: function (event) {
       var dungeonListLength = this.dungeonsUI.length;
       if(dungeonListLength < 2) return;
@@ -263,18 +275,22 @@
 
       this.selectAdversary(this.dungeonsUI[aIndex].id);
     },
-    deleteDungeonUI: function (dungeonId) {
-      var dungeonUI = getElementById(dungeonId);
-      var dungeonUIPreview = getElementById('preview-' + dungeonId);
-      /// @todo review delete, use dungeonUI instead
+    
+    /// @TODO : check if all elements well supressed
+    deleteDungeonUI: function (dungeonUI) {
+      [
+        dungeonUI.dungeonElt,
+        dungeonUI.dungeonPreviewElt,
+        dungeonUI.statusElt,
+      ].forEach( function(elt) {
+        elt.parentElement.removeChild(elt);
+      });
 
-      var adversaryIndex = this.adversaries.indexOf(dungeonUI);
-      this.adversaries.splice(adversaryIndex, 1);
+      var dungeonUiIndex = this.dungeonsUI.indexOf(dungeonUI);
+      this.dungeonsUI.splice(dungeonUiIndex, 1);
 
-      var adversaryPreviewIndex = this.adversariesPreview.indexOf(dungeonUIPreview);
-      this.adversariesPreview.splice(adversaryPreviewIndex, 1);
-      dungeonUI.parentElement.removeChild(dungeonUI);
-      if (dungeonUIPreview) dungeonUIPreview.parentElement.removeChild(dungeonUIPreview);
+      if (this.selectedAdversary == dungeonUI.id) this.selectedAdversary = undefined;
+      this.selectAdversary(); // ensure first join is selected
     },
     applyOptionEvent: function (event) {
       var selectedSquare = event.target;
@@ -309,7 +325,7 @@
           self.selectAdversary(uiDungeon.id);
         });
         
-        if(!self.selectedAdversary) self.selectAdversary(dungeon.id); // ensure first join is selected
+        self.selectAdversary(); // ensure first join is selected
       }
     },
     updateUI: function () {
@@ -318,7 +334,7 @@
       // remove dungeons from ui if not in the game anymore
       self.dungeonsUI.forEach(function (dungeonUi) {
         if (!find(self.game.dungeons, dungeonUi.id)) {
-          self.deleteDungeonUI(dungeonUi.id);
+          self.deleteDungeonUI(dungeonUi);
         }
       });
 

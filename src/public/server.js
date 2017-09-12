@@ -98,6 +98,8 @@ ServerController.prototype = {
           games.splice(findIndex(games, game.id), 1)
         }
 
+        broadcast(game, GAME_EVENT_EDITED, game.toJSON());
+
         game = findGameByDungeonId(self.id);
       }
 
