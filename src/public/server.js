@@ -136,9 +136,10 @@ ServerController.prototype = {
       if (game && (game.status === G_STATUS_RUNNING)) {
         var dungeon = find(game.dungeons, self.id);
         if (dungeon) {
-          dungeon.movePlayer(direction);
-          dungeon.lastUpdateTime = 0;
-          broadcast(game, PLAY_EVENT_UPDATE, game.toJSON());
+          if(dungeon.movePlayer(direction)) {
+            dungeon.lastUpdateTime = 0;
+            broadcast(game, PLAY_EVENT_UPDATE, game.toJSON());
+          }
         }
       }
     });
@@ -229,6 +230,7 @@ Game.prototype = {
       this.clock = setInterval(this.checkClock.bind(this), 1000);
 
       broadcast(this, GAME_EVENT_STARTED, this.toJSON());
+      broadcast(this, PLAY_EVENT_UPDATE, this.toJSON());
     }
   },
   stop: function () {
@@ -312,11 +314,12 @@ function Dungeon(id, config, name) {
   this.life = 100;
   this.money = 100;
   this.lastUpdateTime = 0;
-  this.name = name || id
+  this.name = name || id;
+  this.player;
 
-  this.config = new Config(config)
+  this.config = new Config(config);
 
-  this.createArea(this.config.areaColumns, this.config.areaRows)
+  this.createArea(this.config.areaColumns, this.config.areaRows);
 
   this.modifiers = {
     timeLimitMalus: 0,
@@ -327,13 +330,15 @@ Dungeon.prototype = {
 
   // return true if state applyed, false otherwise
   applyState: function (x, y, requestedState, bullyDungeon) {
+    if( (this.status != D_STATUS_PLAYING) || (bullyDungeon.status != D_STATUS_PLAYING) ) return false;
+
     var originalState = this.area.getState(x, y);
 
     if(this.id === bullyDungeon.id) {
       if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL) && !(originalState & STATE_PLAYER)
         || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) && !(originalState & STATE_PLAYER) ) {
-        this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
-        return true;
+          this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
+          return true;
       } else if ( (requestedState & STATE_DYNAMITE) && (originalState & STATE_WALL) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
         this.area.setState(x, y, STATE_DEFAULT | STATE_BOUM);
         return true;
@@ -359,6 +364,8 @@ Dungeon.prototype = {
     }
   },
   movePlayer: function (direction) {
+
+    if(this.status != D_STATUS_PLAYING) return false;
 
     var originalY = this.player.y;
     var originalX = this.player.x;
@@ -452,7 +459,8 @@ Dungeon.prototype = {
   createArea: function (columns, rows) {
     this.area.reset(columns, rows);
 
-    // set player position, -1 is esthetic choice for placement if no middle cell 
+    // set player position, -1 is esthetic choice for placement if no middle cell
+    /// @TODO should it be done here ? I think we should manage player attribute independently
     var playerXPos = Math.floor( (columns-1) / 2);
     var playerYPos = Math.floor( (rows-1) / 2);
 
