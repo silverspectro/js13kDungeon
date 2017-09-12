@@ -9,18 +9,19 @@
 
 <body>
 
-    <main>
-        <div id="m-setup" class="on off">
-            <label for="dn">My dungeon</label>
-            <input id="dn" type="text" name="gameName" placeholder="Set your warrior dungeon name here" required="required"/>
-            <button id="ge_start">Ready</button>
+    <main id="main-ctrl">
+        <div id="m-panel">
+            <div id="m-setup">
+                <label for="dn">My dungeon</label>
+                <input id="dn" type="text" name="gameName" placeholder="Set your warrior dungeon name here" required="required"/>
+                <button id="ge_start">Ready</button>
+            </div>
+            <div id="m-status"></div>
         </div>
-        <div id="m-dungeon" class="on off"></div>
-        <!-- <div id="m-summary" class="on off"></div> -->
-        <div id="a-dungeons" class="on off"></div>
+        <div id="a-panels"></div>
     </main>
 
-    <div id="ad-previews"></div>
+    <div id="a-previews"></div>
 
     <nav id="option-list" class="on off">
         <ul></ul>
@@ -45,12 +46,6 @@
             <button id="ge_list">Refresh</button>
             <button id="ge_join">Join</button>
         </section>
-    </div>
-
-    <div id="setup-ctrl" class="on off">
-    </div>
-
-    <div id="summary-ctrl" class="on off">
     </div>
 
     <div id="overlay"></div>

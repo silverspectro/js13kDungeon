@@ -71,7 +71,6 @@ ServerController.prototype = {
 
       if (!game) {
         game = new Game(self.socket, payload.name || self.id, new Config(payload) /*, options*/ );
-        // console.log(payload, game);
         // var dungeon = new Dungeon(self.id, game.configTemplate, game.name);
         var dungeon = new Dungeon(self.id, game.configTemplate);
 
@@ -164,7 +163,6 @@ ServerController.prototype = {
         var dungeon = find(game.dungeons, self.id);
         dungeon.status = D_STATUS_READY;
         dungeon.name = payload.name || ( dungeon.name || self.id );
-        // console.log(dungeon, game);
         game.startIfReady();
         broadcast(game, GAME_EVENT_EDITED, game.toJSON());
       }
@@ -197,9 +195,6 @@ function Game(socket, name, configTemplate, options) {
 }
 
 Game.prototype = {
-  // finish: function () {
-  //   this.status = isWin ? G_STATUS_WIN : G_STATUS_LOSE;
-  // },
   removeDungeon: function (dungeonId) {
     var dungeonIndex = findIndex(this.dungeons, dungeonId);
     if (dungeonIndex >= 0) {
@@ -287,7 +282,6 @@ Game.prototype = {
   toJSON: function () {
     return {
       id: this.id,
-      // time: this.time,
       name: this.name,
       status: this.status,
       dungeons: this.dungeons.map(function (dungeon) {

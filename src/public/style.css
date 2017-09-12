@@ -75,7 +75,6 @@ button:focus {
 }
 
 button {
-  height: 50px;
   padding: 1em 2.5em;
   font-size: 16px;
   text-align: center;
@@ -104,18 +103,18 @@ main {
   justify-content: space-around;
 }
 
-#ad-previews {
+#a-previews {
   width: 50%;
   margin-left: 50%;
   display: flex;
  }
 
-.dungeon-preview-container {
+ #a-previews>div, #m-status>div {
   margin-left: 0.3em;
   cursor: pointer;
 }
 
-.dungeon-preview-container.selected {
+#a-previews>div.selected {
   outline: 1px solid black;
 }
 
@@ -134,25 +133,8 @@ nav {
 nav ul li {
   margin-top: 0.3em;
 }
-/* 
-.ready {
-  width: 20px;
-  height: 20px;
-  background-color: rgb(210, 102, 98);
-  border-radius: 50%;
-  cursor: pointer;
-}
 
-.ready.btn-ready {
-  background-color: rgb(133, 203, 46)
-} */
-
-#home-menu {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate3d(-50%, -50%, 0);
-
+#home-menu, #m-setup {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -161,18 +143,32 @@ nav ul li {
 
   background-color: rgb(251, 251, 251);
   width: auto;
-  min-height: 25%;
+  max-width: 25em;
+  min-height: 10em;
   box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
+}
+
+#home-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%, -50%, 0);
 
   z-index: 999;
 }
 
-#home-menu h1 {
-  width: 100%;
+h1, h2 {
+  width: 90%;
   text-align: center;
 }
 
-#home-menu section, #m-setup {
+#m-setup, #m-status, section, #a-panels section {
+  display: none;
+  width: 100%;
+  height: 100%;
+}
+
+#home-menu section {
   min-width: 20em;
   min-height: 15em;
   display: flex;
@@ -194,57 +190,67 @@ nav ul li {
 #home-menu button {
   margin: 1em;
   width: 60%;
-  padding: 0;
 }
 
 main > * {
   width: 48%;
 }
 
-.d-container {
+#a-panels, #m-panel {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.gs_setup #m-setup, .gs_running section, .gs_finished #m-status, #a-panels section.selected   {
+  display: flex;
   justify-content: space-around;
   flex-wrap: wrap;
-  width: 100%;
-  height: 100%;
-}
 
-#m-dungeon .d-container {
-  flex-direction: row-reverse;
-}
-
-#a-dungeons .d-container {
-  display: none;
-}
-
-#a-dungeons .d-container.selected {
   animation: selected 0.2s 1 ease-in-out;
   display: flex;
 }
 
-.d-container h1 {
+#m-setup.ds_ready button {
+  background-color: rgb(133, 203, 46);
+}
+
+#m-setup, section, #m-status {
+  flex-direction: column;
+  align-items: center;
+}
+
+#a-panels section {
+  flex-direction: row;
+  align-items: baseline;
+} 
+
+#m-panel section {
+  flex-direction: row-reverse;
+  align-items: baseline;
+}
+
+
+h1 {
   font-size: 18px;
-  width: 80%;
-  text-align: center;
   margin: 0.5em;
 }
 
-.d-container .status-container {
+section .status-container {
   width: 15%;
 }
 
-.d-container .status-container > * {
+section .status-container > * {
   text-align: center;
   vertical-align: middle;
   margin: auto;
 }
 
-.d-container .area {
+section .area {
   position: relative;
   overflow: hidden;
-  width: auto;
+  width: fit-content;
 }
 
 .life-count {
@@ -269,17 +275,7 @@ main > * {
   text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.3);
 }
 
-.money-count:before {
-  content: ' ';
-  width: 100%;
-  height: 100%;
-  background-image: url('money.gif');
-  background-repeat: no-repeat;
-  background-position: left center;
-  background-size: contain;
-}
-
-.dungeon-preview-container {
+#a-previews>div, #m-status>div {
   display: flex;
   flex-direction: row;
   justify-content: space-around;
@@ -287,22 +283,25 @@ main > * {
   z-index: 9;
 }
 
-.dungeon-preview-container > * {
+#a-previews>div .life-count, #a-previews>div .money-count, #m-status .life-count, #m-status .money-count {
+  width: 20%;
+  font-size: 1.8em;
+  line-height: initial;
+  height: auto;
   background-color: transparent;
   border: none;
   border-radius: none;
 }
 
-.dungeon-preview-container .life-count, .dungeon-preview-container .money-count {
-  width: 20%;
-  font-size: 1.8em;
-  line-height: initial;
-  height: auto;
+#a-previews .status {
+  width: 20px;
+  height: 20px;
+  background-color: rgb(133, 203, 46);
+  border-radius: 50%;
 }
 
-.dungeon-preview-container h2 {
-  width: 90%;
-  text-align: center;
+#a-previews .ds_setup .status, #a-previews .ds_lost .status  {
+  background-color: rgb(210, 102, 98);
 }
 
 .row {
@@ -358,7 +357,7 @@ main > * {
   background-image: url('dynamite.gif');
 }
 
-#m-dungeon .dynamite::before {
+#m-panel .dynamite::before {
   display: none;
 }
 
@@ -370,7 +369,7 @@ main > * {
   background-image: url('money.gif');
 }
 
-.icon {
+/* .icon {
   display: inline-block;
   width: 1.5em;
   height: 1.5em;
@@ -387,7 +386,7 @@ main > * {
 
 .icon.money:after {
   content: none;
-}
+} */
 
 .light {
   pointer-events: none;

@@ -236,14 +236,14 @@
       var selectedDungeonUI = find(self.dungeonsUI, self.selectedAdversary);
       if(selectedDungeonUI) {
         selectedDungeonUI.dungeonElt.classList.remove('selected');
-        selectedDungeonUI.previewElt.classList.remove('selected');
+        selectedDungeonUI.dungeonPreviewElt.classList.remove('selected');
       }
 
       self.selectedAdversary = adversaryId;
       selectedDungeonUI = find(self.dungeonsUI, adversaryId);
       if(selectedDungeonUI) {
         selectedDungeonUI.dungeonElt.classList.add('selected');
-        selectedDungeonUI.previewElt.classList.add('selected');
+        selectedDungeonUI.dungeonPreviewElt.classList.add('selected');
       }
     },
     navigateThroughAdversaries: function (event) {
@@ -265,6 +265,7 @@
     deleteDungeonUI: function (dungeonId) {
       var dungeonUI = getElementById(dungeonId);
       var dungeonUIPreview = getElementById('preview-' + dungeonId);
+      /// @todo review delete, use dungeonUI instead
 
       var adversaryIndex = this.adversaries.indexOf(dungeonUI);
       this.adversaries.splice(adversaryIndex, 1);
@@ -292,19 +293,21 @@
 
       self.dungeonsUI.push(uiDungeon);
 
+      getElementById("m-status").appendChild(uiDungeon.statusElt);
+      
       if (dungeon.id == self.id) { // not adversary
-        getElementById('m-dungeon').appendChild(uiDungeon.dungeonElt);
+        getElementById('m-panel').appendChild(uiDungeon.dungeonElt);
 
       } else { // adversary
-        getElementById('a-dungeons').appendChild(uiDungeon.dungeonElt);
-        getElementById('ad-previews').appendChild(uiDungeon.previewElt);
+        getElementById('a-panels').appendChild(uiDungeon.dungeonElt);
+        getElementById('a-previews').appendChild(uiDungeon.dungeonPreviewElt);
 
-        on(uiDungeon.previewElt, 'click', function (event) {
+        on(uiDungeon.dungeonPreviewElt, 'click', function (event) {
           event.preventDefault();
           event.stopPropagation();
           self.selectAdversary(uiDungeon.id);
         });
-
+        
         if(!self.selectedAdversary) self.selectAdversary(dungeon.id); // ensure first join is selected
       }
     },
@@ -326,32 +329,34 @@
         dungeonUI ? dungeonUI.updateFromDungeon(dungeon) : self.addDungeonUI(dungeon);
       });
 
-      // update panel according game status
-      if(self.game.status == G_STATUS_SETUP) {
+      self.updateUIFromSTatus();
+
+      self.selectAdversary(self.selectedAdversary); // keep it at the end cause of status usage as class
+    },
+    updateUIFromSTatus: function () {
+      var self = this;
+
+      var gameStatus = self.game.status
+      var selfDungeon = find(self.game.dungeons, self.id)
+
+      mainCtrl.className = gameStatus;
+      setupMenu.className = selfDungeon.status;
+
+      if(gameStatus == G_STATUS_SETUP) {
         toggle(homeMenu, false);
-        toggle(myDungeon, false);
-        toggle(adversariesDungeons, false);
-        toggle(setupMenu, true);
         toggle(optionList, false);
         
       } else if(self.game.status == G_STATUS_RUNNING) {
         toggle(homeMenu, false);
-        toggle(myDungeon, true);
-        toggle(adversariesDungeons, true);
-        toggle(setupMenu, false);
-        
+
       } else if(self.game.status == G_STATUS_FINISHED) {
         toggle(homeMenu, false);
-        toggle(myDungeon, false);
-        toggle(adversariesDungeons, false);
-        toggle(setupMenu, false);
         toggle(optionList, false);
         
       } else {
         throw new Error("Unknown game status.");
       }
-
-    },
+    }
   }
 
   /* -------- End ClientController Class -------- */
@@ -359,9 +364,10 @@
   // client environment variables
   var elementsOn = {},
     homeMenu = getElementById('home-menu'),
+    mainCtrl = getElementById('main-ctrl'),
     setupMenu = getElementById('m-setup'),
-    myDungeon = getElementById('m-dungeon'),
-    adversariesDungeons = getElementById('a-dungeons'),
+    myPanel = getElementById('m-panel'),
+    adversaryPanels = getElementById('a-panels'),
     gamesSelect = getElementById('gl'),
     optionList = getElementById('option-list'),
     optionListUl = optionList.getElementsByTagName('ul')[0],
@@ -399,13 +405,6 @@
 
     /// @TODO shouldn't we manage this case ?
     // socket.on("error", function () {});
-
-    // socket.on(PLAY_EVENT_WIN, function (dungeonPayload) {
-    //   throw new Error("TODO");
-    // });
-    // socket.on(PLAY_EVENT_LOST, function (dungeonPayload) {
-    //   throw new Error("TODO");
-    // });
 
     socket.on(GAME_EVENT_FINISHED, function (updatedGame) {
       controller.updateGame(updatedGame);
@@ -506,18 +505,28 @@
   function UiDungeon(controller, dungeon) {
     this.id = dungeon.id;
     this.randomBGMap = [];
+    this.style;
     
     // Dom area cells elements mapped in order to make update fast & simple
     this.area = [];
 
     // Dom elements mapped in order to make update simple
+    /// @TODO : associate dom elements by information 'type' (life, money, status, name) 
+    //          to make update / create more consistent and simpler 
     this.dungeonElt;
-    this.previewElt;
-    this.dungeonNameElt;
+    this.nameElt;
     this.lifeCountElt;
     this.moneyCountElt;
+
+    this.dungeonPreviewElt;
+    this.previewDungeonName;
     this.previewLifeCountElt;
     this.previewMoneyCountElt;
+
+    this.statusElt;
+    this.statusNameElt;
+    this.statusLifeCountElt;
+    this.statusMoneyCountElt;
 
     // initialize dom elements
     // @TODO make it generic
@@ -528,14 +537,28 @@
     updateFromDungeon: function (dungeon) {
       var self = this;
 
-      self.style = getCellSize(dungeon.area);
-      
-      self.dungeonNameElt.innerHTML = dungeon.name;
-      self.lifeCountElt.innerHTML = dungeon.life;
-      self.moneyCountElt.innerHTML = dungeon.money;
+      // update name
+      self.nameElt.innerHTML = dungeon.name;
+      self.previewDungeonName.innerHTML = dungeon.name;
+      self.statusNameElt.innerHTML = dungeon.name;
 
+      // update life
+      self.lifeCountElt.innerHTML = dungeon.life;
       self.previewLifeCountElt.innerHTML = dungeon.life;
+      self.statusLifeCountElt.innerHTML = dungeon.life;
+      
+      // update money
+      self.moneyCountElt.innerHTML = dungeon.money;
       self.previewMoneyCountElt.innerHTML = dungeon.money;
+      self.statusMoneyCountElt.innerHTML = dungeon.money;
+
+      // update status
+      self.dungeonElt.className = dungeon.status;
+      self.statusElt.className = dungeon.status;
+      self.dungeonPreviewElt.className = dungeon.status;
+
+      // make game responsive
+      self.style = getCellSize(dungeon.area);
       
       // TODO : it won't work if area dimension changed
       dungeon.area.states.forEach(function (row, rowIndex) {
@@ -547,16 +570,11 @@
         });
       });
     },
-    // createArea: function () {
-    //   throw new Error("TODO");
-    // },
-    // delete: function () {
-    //   throw new Error("TODO");
-    // },
     init: function (dungeon) {
       // build dom elements and map them
       this.createDungeonElt(dungeon);
-      this.createPreviewElt(dungeon);
+      this.createDungeonPreviewElt(dungeon);
+      this.createStatusElt(dungeon);
       
       // set dom elements values
       this.updateFromDungeon(dungeon);
@@ -564,13 +582,13 @@
     createDungeonElt: function (dungeon) {
       var self = this;
 
-      this.dungeonElt = createUIElement('div', {
-        class: 'd-container',
+      // for simplicity section element is reserved for dungeon containers
+      /// @TODO enhance class / status management, use data attribute ?
+      self.dungeonElt = createUIElement('section', {
         id: dungeon.id,
       });
 
       var dungeonName = createUIElement('h1');
-      dungeonName.innerHTML = dungeon.name;
 
       var area = createUIElement('div', {
         class: 'area',
@@ -636,34 +654,49 @@
       self.dungeonElt.appendChild(area);
 
       // map the element to uiDungeon
-      self.dungeonNameElt = dungeonName;
+      self.nameElt = dungeonName;
       self.lifeCountElt = lifeCount;
       self.moneyCountElt = moneyCount;
 
     },
-    createPreviewElt: function (dungeon) {
+    createDungeonPreviewElt: function (dungeon) {
       var self = this;
 
-      self.previewElt = createUIElement('div', {
-        class: 'dungeon-preview-container',
-        id: 'preview-' + dungeon.id,
+      self.dungeonPreviewElt = createUIElement('div', {
         'data-dungeon-id': dungeon.id,
       });
-      var previewLifeCount = createUIElement('p', {
+      self.previewLifeCountElt = createUIElement('p', {
         class: 'life-count',
       });
-      var previewMoneyCount = createUIElement('p', {
+      self.previewMoneyCountElt = createUIElement('p', {
         class: 'money-count',
       });
-      var previewDungeonName = createUIElement('h2');
-      previewDungeonName.innerHTML = dungeon.id;
+      self.previewDungeonName = createUIElement('h2');
 
-      self.previewElt.appendChild(previewDungeonName);
-      self.previewElt.appendChild(previewLifeCount);
-      self.previewElt.appendChild(previewMoneyCount);
+      self.dungeonPreviewElt.appendChild(self.previewDungeonName);
+      self.dungeonPreviewElt.appendChild(self.previewLifeCountElt);
+      self.dungeonPreviewElt.appendChild(self.previewMoneyCountElt);
+    },
 
-      self.previewLifeCountElt = previewLifeCount;
-      self.previewMoneyCountElt = previewMoneyCount;
+    createStatusElt: function (dungeon) {
+      
+      var self = this;
+      
+      self.statusElt = createUIElement('div', {
+        'data-dungeon-id': dungeon.id,
+      });
+
+      self.statusNameElt = createUIElement('h2');
+      self.statusLifeCountElt = createUIElement('p', { class: 'life-count', });
+      self.statusMoneyCountElt = createUIElement('p', { class: 'money-count', });
+      var previewStatusElt = createUIElement('p', { class: 'status', });
+
+      self.statusElt.appendChild(self.statusNameElt);
+      self.statusElt.appendChild(self.statusLifeCountElt);
+      self.statusElt.appendChild(self.statusMoneyCountElt);
+      self.dungeonPreviewElt.appendChild(previewStatusElt);
+
+      /// @TODO : add some texts to enlight status playing / win / lose     },
     },
   }
 
