@@ -9,12 +9,19 @@
 
 <body>
 
-    <main>
-        <div id="my-dungeon"></div>
-        <div id="adversaries-dungeon"></div>
+    <main id="main-ctrl">
+        <div id="m-panel">
+            <div id="m-setup">
+                <label for="dn">My dungeon</label>
+                <input id="dn" type="text" name="gameName" placeholder="Set your warrior dungeon name here" required="required"/>
+                <button id="ge_start">Ready</button>
+            </div>
+            <div id="m-status"></div>
+        </div>
+        <div id="a-panels"></div>
     </main>
 
-    <div id="dungeon-preview"></div>
+    <div id="a-previews"></div>
 
     <nav id="option-list" class="on off">
         <ul></ul>
@@ -22,23 +29,22 @@
 
     <div id="home-menu" class="on">
 
-        <h1>Laby-love</h1>
+        <h1>Dungeon Something</h1>
 
         <section>
-            <label for="gn">Dungeon name</label>
-            <input id="gn" type="text" name="gameName" placeholder="Set your warrior name here" required="required"/>
+            <label for="gn">Game name</label>
+            <input id="gn" type="text" name="gameName" placeholder="Set the game name here" required="required"/>
             <label for="ac">Game area columns</label>
             <input id="ac" type="number" name="areaColumns" value="11" required="required" step="2" min="5" max="31"/>
             <label for="ar">Game area rows</label>
             <input id="ar" type="number" name="areaRows" value="15" required="required" step="2" min="7" max="47"/>
-            <button id="new-g">New game</button>
+            <button id="ge_create">New game</button>
         </section>
         
         <section>
-            <select id="gl" name="gameId">
-            </select>
-            <button id="refresh-gl">Refresh</button>
-            <button id="join-g">Join</button>
+            <select id="gl" name="gameId"></select>
+            <button id="ge_list">Refresh</button>
+            <button id="ge_join">Join</button>
         </section>
     </div>
 
