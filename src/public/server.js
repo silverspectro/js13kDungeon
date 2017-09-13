@@ -166,8 +166,9 @@ ServerController.prototype = {
         var dungeon = find(game.dungeons, self.id);
         dungeon.status = D_STATUS_READY;
         dungeon.name = payload.name || ( dungeon.name || self.id );
-        game.startIfReady();
+        var readyPlayers = game.startIfReady();
         broadcast(game, GAME_EVENT_EDITED, game.toJSON());
+        if (readyPlayers < game.dungeons.length) broadcast(game, D_STATUS_READY, { dungeon: dungeon, readyPlayers: readyPlayers });
       }
     });
   },
@@ -201,14 +202,19 @@ Game.prototype = {
   removeDungeon: function (dungeonId) {
     var dungeonIndex = findIndex(this.dungeons, dungeonId);
     if (dungeonIndex >= 0) {
+      broadcast(this, GAME_EVENT_LEAVE, this.dungeons[dungeonIndex].toJSON());
       this.dungeons.splice(dungeonIndex, 1);
     }
   },
   addDungeon: function (dungeon) {
+    var self = this;
     var refDungeon = find(this.dungeons, dungeon.id);
     if (!refDungeon) {
       this.socket.join(dungeon.id); // manage rooms
       this.dungeons.push(dungeon);
+      setTimeout(function() {
+        broadcast(self, GAME_EVENT_JOIN, dungeon.toJSON());
+      }, 1000);
       return true;
     } else {
       console.warn(dungeon.id + ' already in game ' + this.id);
@@ -216,9 +222,11 @@ Game.prototype = {
     }
   },
   startIfReady: function () {
+    var playerReady = 1;
     if (this.status === G_STATUS_SETUP) {
       for (var i = 0; i < this.dungeons.length; i++) {
-        if (this.dungeons[i].status !== D_STATUS_READY) return false;
+        if (this.dungeons[i].status !== D_STATUS_READY) return playerReady;
+        playerReady++;
       }
 
       // all dungeons are ready => start
@@ -232,6 +240,7 @@ Game.prototype = {
       broadcast(this, GAME_EVENT_STARTED, this.toJSON());
       broadcast(this, PLAY_EVENT_UPDATE, this.toJSON());
     }
+    return playerReady;
   },
   stop: function () {
     var self = this;
@@ -252,13 +261,14 @@ Game.prototype = {
 
       if (dungeon.reduceLifeOnClock()) isUpdated = true;
       if (dungeon.addBonusOnClock(self.time)) isUpdated = true;
-
-      if (dungeon.updateStatus()) {
+      
+      if (dungeon.updateStatus() && !dungeon.hasLost) {
         isUpdated = true;
-        if (dungeon.status == D_STATUS_LOST) broadcast(self, PLAY_EVENT_LOST, self.toJSON());
+        if (dungeon.status === D_STATUS_LOST) broadcast(self, PLAY_EVENT_LOST, self.toJSON());
+        dungeon.hasLost = true;
       }
 
-      if (dungeon.status == D_STATUS_PLAYING) {
+      if (dungeon.status === D_STATUS_PLAYING) {
         lastActiveDungeon = dungeon;
         activeDungeonCount++;
       }

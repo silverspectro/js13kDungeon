@@ -2,6 +2,18 @@
 
 (function () {
 
+  function diff(a, b) {
+    var di = [];
+    a.forEach(function(e) {
+      b.forEach(function(l, i){
+        if (e.id !== l.id) {
+          di.push(e);
+        }
+      });
+    });
+    return di;
+  };
+
   /* -------- General Functions -------- */
 
   /**
@@ -357,10 +369,11 @@
         id: 'modal',
       }),
       modalH = createUIElement('h1'),
-      modalP = createUIElement('p');
+      modalP = createUIElement('p'),
+      timeout;
 
-      modalH.innerHTML = message.body;
-      modalP.innerHTML = message.title;
+      modalH.innerHTML = message.title;
+      modalP.innerHTML = message.body;
 
       modal.appendChild(modalH);
       modal.appendChild(modalP);
@@ -368,13 +381,20 @@
 
       window.setTimeout(function() {
         modal.classList.add('modal-in');
-        window.setTimeout(function() {
+        timeout = window.setTimeout(function() {
           modal.classList.add('modal-out');
           window.setTimeout(function() {
             document.body.removeChild(modal);
           }, 3000)
-        }, 1500);
-      });
+        }, message.duration || 1500);
+      },100);
+
+      window.addEventListener('keydown', function(event) {
+        if (event.keyCode === 27) {
+          window.clearTimeout(timeout);
+          document.body.removeChild(modal);
+        }
+      })
     },
     updateUIFromSTatus: function () {
       var self = this;
@@ -420,7 +440,19 @@
     controller,
     timeout,
     mouseX = 0,
-    mouseY = 0;
+    mouseY = 0,
+    TIMEOUT_DURATION = 5000;
+
+  
+  function greetings(game) {
+    if (controller) {
+      controller.notify({
+        title: 'Welcome in ' + game.name,
+        body: 'Hit the ready button when you are \n don\'t forget to name your warrior !',
+        duration: 12000,
+      });
+    }
+  };
 
   /**
    * Bind Socket.IO and button events
@@ -434,16 +466,50 @@
     socket.on(GAME_EVENT_CREATED, function (newGame) {
       initClientController(newGame);
       updateGameOptions();
-      window.setTimeout(function() {
-        controller.notify({
-          title: 'Hello',
-          body: 'World !',
-        });
-      }, 500);
     });
 
     socket.on(GAME_EVENT_STARTED, function () {
       toggle(optionList);
+      controller.notify({
+        title: 'Game STARTED !',
+        body: 'Fight for your life, and remember... watch you steps',
+      }, TIMEOUT_DURATION);
+    });
+
+    socket.on(GAME_EVENT_JOIN, function(d) {
+      if (d.id === socket.id) {
+        greetings(d);
+      } else {
+        controller.notify({
+          title: 'new Player joined ' + d.name,
+          body: 'Another mighty heroe to join the battle',
+          duration: TIMEOUT_DURATION,
+        });
+      }
+    });
+
+    socket.on(PLAY_EVENT_LOST, function(dungeon) {
+      controller.notify({
+        title: dungeon.name + ' lost the game !',
+        body: 'Alas, another hero falls',
+        duration: TIMEOUT_DURATION,
+      });
+    });
+
+    socket.on(D_STATUS_WON, function(dungeon) {
+      controller.notify({
+        title: dungeon.name + ' won the game !',
+        body: 'All hails the mighty Hero who defeated his foes',
+        duration: 10000,
+      });
+    });
+
+    socket.on(GAME_EVENT_LEAVE, function(d) {
+      controller.notify({
+        title: d.name + ' left the game',
+        body: 'The corridors feel a little bit more peacefull',
+        duration: TIMEOUT_DURATION,
+      });
     });
 
     // update UI anytime game edited or play updated
@@ -451,6 +517,14 @@
     socket.on(GAME_EVENT_EDITED, function (updatedGame) {
       controller ? controller.updateGame(updatedGame) : initClientController(updatedGame);
       updateGameOptions();
+    });
+
+    socket.on(D_STATUS_READY, function(payload) {
+      controller.notify({
+        title: payload.dungeon.name + ' ready !',
+        body: payload.readyPlayers + '/' + controller.game.dungeons.length + ' players are ready',
+        duration: TIMEOUT_DURATION,
+      });
     });
 
     /// @TODO shouldn't we manage this case ?
