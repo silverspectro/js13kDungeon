@@ -59,12 +59,12 @@
 
     var cssClass = "square";
 
-    if( state & STATE_PLAYER ) { cssClass += " player"; }
-    if( state & STATE_WALL ) { cssClass += " wall"; }
-    if( state & STATE_DYNAMITE ) { cssClass += " dynamite"; }
-    if( state & STATE_MONEY ) { cssClass += " money"; }
-    if( state & STATE_RHUM ) { cssClass += " rhum"; }
-    if( state & STATE_BOUM ) { cssClass += " boum"; }
+    if( state & SPL ) { cssClass += " player"; }
+    if( state & SWL ) { cssClass += " wall"; }
+    if( state & STDY ) { cssClass += " dynamite"; }
+    if( state & STMO ) { cssClass += " money"; }
+    if( state & STRH ) { cssClass += " rhum"; }
+    if( state & STBM ) { cssClass += " boum"; }
     
     return cssClass;
   }
@@ -75,8 +75,8 @@
    * @TODO : review this function interest (used only once)
    */
   function getStateLabel(state) {
-    if( state & STATE_DYNAMITE ) return "Dynamite";
-    if( state & STATE_WALL ) return "Wall";
+    if( state & STDY ) return "Dynamite";
+    if( state & SWL ) return "Wall";
   }
 
   /**
@@ -225,7 +225,7 @@
     this.id = socket.id;
     this.game;
     this.dungeonsUI = [];
-    this.selectedOption = STATE_WALL;
+    this.selectedOption = SWL;
     this.selectedAdversary;
     this.keypressed = false;
 
@@ -260,14 +260,14 @@
       var selectedDungeonUI = find(self.dungeonsUI, self.selectedAdversary);
       if(selectedDungeonUI) {
         selectedDungeonUI.dungeonElt.classList.remove('selected');
-        selectedDungeonUI.dungeonPreviewElt.classList.remove('selected');
+        selectedDungeonUI.dpelt.classList.remove('selected');
       }
 
       self.selectedAdversary = adversaryId;
       selectedDungeonUI = find(self.dungeonsUI, adversaryId);
       if(selectedDungeonUI) {
         selectedDungeonUI.dungeonElt.classList.add('selected');
-        selectedDungeonUI.dungeonPreviewElt.classList.add('selected');
+        selectedDungeonUI.dpelt.classList.add('selected');
       }
     },
 
@@ -294,7 +294,7 @@
     deleteDungeonUI: function (dungeonUI) {
       [
         dungeonUI.dungeonElt,
-        dungeonUI.dungeonPreviewElt,
+        dungeonUI.dpelt,
         dungeonUI.statusElt,
       ].forEach( function(elt) {
         elt.parentElement.removeChild(elt);
@@ -311,7 +311,7 @@
       var dungeonId = selectedSquare.getAttribute('data-dungeon-id');
       var x = parseInt(selectedSquare.getAttribute('data-area-x'), 10);
       var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
-      socket.emit(PLAY_EVENT_APPLY, {
+      socket.emit(PEAP, {
         opponentId: dungeonId,
         state: controller.selectedOption,
         x: x,
@@ -331,9 +331,9 @@
 
       } else { // adversary
         getElementById('a-panels').appendChild(uiDungeon.dungeonElt);
-        getElementById('a-previews').appendChild(uiDungeon.dungeonPreviewElt);
+        getElementById('a-previews').appendChild(uiDungeon.dpelt);
 
-        on(uiDungeon.dungeonPreviewElt, 'click', function (event) {
+        on(uiDungeon.dpelt, 'click', function (event) {
           event.preventDefault();
           event.stopPropagation();
           self.selectAdversary(uiDungeon.id);
@@ -459,16 +459,16 @@
    */
   function bind() {
 
-    socket.on(GAME_EVENT_LISTED, function (rooms) {
+    socket.on(GELDED, function (rooms) {
       updateGamesList(rooms);
     });
 
-    socket.on(GAME_EVENT_CREATED, function (newGame) {
+    socket.on(GECDD, function (newGame) {
       initClientController(newGame);
       updateGameOptions();
     });
 
-    socket.on(GAME_EVENT_STARTED, function () {
+    socket.on(GESTDED, function () {
       toggle(optionList);
       controller.notify({
         title: 'Game STARTED !',
@@ -476,7 +476,7 @@
       }, TIMEOUT_DURATION);
     });
 
-    socket.on(GAME_EVENT_JOIN, function(d) {
+    socket.on(GEJN, function(d) {
       if (d.id === socket.id) {
         greetings(d);
       } else {
@@ -488,7 +488,7 @@
       }
     });
 
-    socket.on(PLAY_EVENT_LOST, function(dungeon) {
+    socket.on(PELS, function(dungeon) {
       controller.notify({
         title: dungeon.name + ' lost the game !',
         body: 'Alas, another hero falls',
@@ -496,7 +496,7 @@
       });
     });
 
-    socket.on(D_STATUS_WON, function(dungeon) {
+    socket.on(DSW, function(dungeon) {
       controller.notify({
         title: dungeon.name + ' won the game !',
         body: 'All hails the mighty Hero who defeated his foes',
@@ -504,7 +504,7 @@
       });
     });
 
-    socket.on(GAME_EVENT_LEAVE, function(d) {
+    socket.on(GELV, function(d) {
       controller.notify({
         title: d.name + ' left the game',
         body: 'The corridors feel a little bit more peacefull',
@@ -514,7 +514,7 @@
 
     // update UI anytime game edited or play updated
     // we have to create controller when joining a game
-    socket.on(GAME_EVENT_EDITED, function (updatedGame) {
+    socket.on(GEEDT, function (updatedGame) {
       controller ? controller.updateGame(updatedGame) : initClientController(updatedGame);
       updateGameOptions();
     });
@@ -530,7 +530,7 @@
     /// @TODO shouldn't we manage this case ?
     // socket.on("error", function () {});
 
-    socket.on(GAME_EVENT_FINISHED, function (updatedGame) {
+    socket.on(GEFD, function (updatedGame) {
       controller.updateGame(updatedGame);
     });
 
@@ -541,7 +541,7 @@
     buttons.forEach(function (button) {
       on(button, 'click', function () {
         switch (button.id) {
-          case GAME_EVENT_CREATE:
+          case GECD:
             socket.emit(button.id, {
               areaColumns: getValueById('ac'),
               areaRows: getValueById('ar'),
@@ -549,19 +549,19 @@
             });
             break;
 
-          case GAME_EVENT_JOIN:
+          case GEJN:
             socket.emit(button.id, {
               gameId: getValueById('gl'),
             });
             break;
 
-          case GAME_EVENT_START:
+          case GESTD:
             socket.emit(button.id, {
               name: getValueById('dn'),
             });
             break;
 
-          case GAME_EVENT_LIST:
+          case GELD:
             socket.emit(button.id, {
               playerId: socket.id,
             });
@@ -600,12 +600,12 @@
         if (!controller.keypressed) {
           controller.keypressed = true;
 
-          if      (key === 87 || key === 38) { direction = MOVE_UP; }
-          else if (key === 40 || key === 83) { direction = MOVE_DOWN; }
-          else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
-          else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
+          if      (key === 87 || key === 38) { direction = MUP; }
+          else if (key === 40 || key === 83) { direction = MDW; }
+          else if (key === 65 || key === 37) { direction = MLT; }
+          else if (key === 68 || key === 39) { direction = MRH; }
 
-          if (direction) socket.emit(PLAY_EVENT_MOVE, direction);
+          if (direction) socket.emit(PEMV, direction);
           timeout = window.setTimeout(function () {
             controller.keypressed = false;
           }, 100);
@@ -642,15 +642,15 @@
     this.lifeCountElt;
     this.moneyCountElt;
 
-    this.dungeonPreviewElt;
-    this.previewDungeonName;
-    this.previewLifeCountElt;
-    this.previewMoneyCountElt;
+    this.dpelt;
+    this.pdn;
+    this.plce;
+    this.pmce;
 
     this.statusElt;
-    this.statusNameElt;
-    this.statusLifeCountElt;
-    this.statusMoneyCountElt;
+    this.sne;
+    this.slce;
+    this.smce;
 
     // initialize dom elements
     // @TODO make it generic
@@ -663,23 +663,23 @@
 
       // update name
       self.nameElt.innerHTML = dungeon.name;
-      self.previewDungeonName.innerHTML = dungeon.name;
-      self.statusNameElt.innerHTML = dungeon.name;
+      self.pdn.innerHTML = dungeon.name;
+      self.sne.innerHTML = dungeon.name;
 
       // update life
       self.lifeCountElt.innerHTML = dungeon.life;
-      self.previewLifeCountElt.innerHTML = dungeon.life;
-      self.statusLifeCountElt.innerHTML = dungeon.life;
+      self.plce.innerHTML = dungeon.life;
+      self.slce.innerHTML = dungeon.life;
       
       // update money
       self.moneyCountElt.innerHTML = dungeon.money;
-      self.previewMoneyCountElt.innerHTML = dungeon.money;
-      self.statusMoneyCountElt.innerHTML = dungeon.money;
+      self.pmce.innerHTML = dungeon.money;
+      self.smce.innerHTML = dungeon.money;
 
       // update status
       self.dungeonElt.className = dungeon.status;
       self.statusElt.className = dungeon.status;
-      self.dungeonPreviewElt.className = dungeon.status;
+      self.dpelt.className = dungeon.status;
 
       // make game responsive
       self.style = getCellSize(dungeon.area);
@@ -697,7 +697,7 @@
     init: function (dungeon) {
       // build dom elements and map them
       this.createDungeonElt(dungeon);
-      this.createDungeonPreviewElt(dungeon);
+      this.createdpelt(dungeon);
       this.createStatusElt(dungeon);
       
       // set dom elements values
@@ -717,7 +717,7 @@
       var area = createUIElement('div', {
         class: 'area',
       });
-      var statusContainer = createUIElement('div', {
+      var stCo = createUIElement('div', {
         class: 'status-container',
       });
       var lifeCount = createUIElement('p', {
@@ -772,11 +772,11 @@
       }
 
       // append the elements to the DOM
-      statusContainer.appendChild(lifeCount);
-      statusContainer.appendChild(moneyCount);
+      stCo.appendChild(lifeCount);
+      stCo.appendChild(moneyCount);
 
       self.dungeonElt.appendChild(dungeonName);
-      self.dungeonElt.appendChild(statusContainer);
+      self.dungeonElt.appendChild(stCo);
       self.dungeonElt.appendChild(area);
 
       // map the element to uiDungeon
@@ -785,23 +785,23 @@
       self.moneyCountElt = moneyCount;
 
     },
-    createDungeonPreviewElt: function (dungeon) {
+    createdpelt: function (dungeon) {
       var self = this;
 
-      self.dungeonPreviewElt = createUIElement('div', {
+      self.dpelt = createUIElement('div', {
         'data-dungeon-id': dungeon.id,
       });
-      self.previewLifeCountElt = createUIElement('p', {
+      self.plce = createUIElement('p', {
         class: 'life-count',
       });
-      self.previewMoneyCountElt = createUIElement('p', {
+      self.pmce = createUIElement('p', {
         class: 'money-count',
       });
-      self.previewDungeonName = createUIElement('h2');
+      self.pdn = createUIElement('h2');
 
-      self.dungeonPreviewElt.appendChild(self.previewDungeonName);
-      self.dungeonPreviewElt.appendChild(self.previewLifeCountElt);
-      self.dungeonPreviewElt.appendChild(self.previewMoneyCountElt);
+      self.dpelt.appendChild(self.pdn);
+      self.dpelt.appendChild(self.plce);
+      self.dpelt.appendChild(self.pmce);
     },
 
     createStatusElt: function (dungeon) {
@@ -812,15 +812,15 @@
         'data-dungeon-id': dungeon.id,
       });
 
-      self.statusNameElt = createUIElement('h2');
-      self.statusLifeCountElt = createUIElement('p', { class: 'life-count', });
-      self.statusMoneyCountElt = createUIElement('p', { class: 'money-count', });
+      self.sne = createUIElement('h2');
+      self.slce = createUIElement('p', { class: 'life-count', });
+      self.smce = createUIElement('p', { class: 'money-count', });
       var previewStatusElt = createUIElement('p', { class: 'status', });
 
-      self.statusElt.appendChild(self.statusNameElt);
-      self.statusElt.appendChild(self.statusLifeCountElt);
-      self.statusElt.appendChild(self.statusMoneyCountElt);
-      self.dungeonPreviewElt.appendChild(previewStatusElt);
+      self.statusElt.appendChild(self.sne);
+      self.statusElt.appendChild(self.slce);
+      self.statusElt.appendChild(self.smce);
+      self.dpelt.appendChild(previewStatusElt);
 
       /// @TODO : add some texts to enlight status playing / win / lose     },
     },
@@ -841,7 +841,7 @@
     bind();
 
     // Start with current game list
-    socket.emit(GAME_EVENT_LIST, { playerId: socket.id, });
+    socket.emit(GELD, { playerId: socket.id, });
 
   }
 
