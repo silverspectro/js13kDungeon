@@ -154,7 +154,7 @@ nav ul li {
   left: 50%;
   transform: translate3d(-50%, -50%, 0);
 
-  z-index: 999;
+  z-index: 900;
 }
 
 h1, h2 {
@@ -506,4 +506,38 @@ section .area {
 
 #a-panels section.ds_lost::after {
   transform: translate(-50%, -50%) scale(1, 1);
+}
+#modal {
+  position: fixed;
+  top: 0%;
+  left: 5%;
+  width: auto;
+  height: auto;
+  max-width: 250px;
+  word-break: break-word;
+  padding: 1.5em 2.5em;
+  background-color: white;
+  box-shadow: 5px 5px 2px 0 rgba(0,0,0,0.6);
+  transform: translate(0%, 0%) scale(0.01, 0.01) rotate(3600deg);
+  z-index: 999;
+  transition: transform 0.4s 0s cubic-bezier(.74,.33,.96,.64);
+}
+
+#modal.modal-in {
+  transform: translate(0%, 0%) scale(1.05, 1.05) rotate(-15deg);
+}
+
+#modal.modal-out {
+  transition-duration: 1.5s;
+  transition-timing-function: cubic-bezier(.99,.27,.86,1.08);
+  transform: translate(0%, 600%) scale(1, 1) rotate(20deg);
+}
+
+#modal h1 {
+  text-align: center;
+}
+
+#modal p {
+  text-align: center;
+  margin: 1em 0.5em;
 }

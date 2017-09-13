@@ -24,25 +24,18 @@ var GAME_EVENT_CREATE = "ge_create",
   GAME_EVENT_LIST = "ge_list",
   GAME_EVENT_LISTED = "ge_listed",
   GAME_EVENT_JOIN = "ge_join",
-  // GAME_EVENT_JOINED = "ge_joined",
-  // GAME_EVENT_EDIT = "ge_edit",
   GAME_EVENT_EDITED = "pe_update", // for now, GAME_EVENT_EDITED === PLAY_EVENT_UPDATE to make ui management easier
-  // GAME_EVENT_SETUP = "ge_setup",
   GAME_EVENT_START = "ge_start",
   GAME_EVENT_STARTED = "ge_started",
-  GAME_EVENT_FINISHED = "ge_finished";
-  // GAME_EVENT_PLAYER_FINISHED = "ge_pfinished";
+  GAME_EVENT_FINISHED = "ge_finished",
+  GAME_EVENT_LEAVE = "ge_leave",
+  GAME_EVENT_JOIN = "ge_join";
 
   var PLAY_EVENT_MOVE = "pe_move",
     PLAY_EVENT_APPLY = "pe_apply",
     PLAY_EVENT_UPDATE = "pe_update",
     PLAY_EVENT_WIN = "pe_win",
     PLAY_EVENT_LOST = "pe_lost";
-
-/// @TODO
-// var P_MOD_EVERY_ONE_FOR_HIMSELF = "pm_e4h",
-//   P_MOD_TWO_BY_DUNGEON = "pm_2bd",
-//   P_MOD_VERSUS = "pm_ver";
 
 var G_STATUS_SETUP = "gs_setup",
   G_STATUS_RUNNING = "gs_running",
