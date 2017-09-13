@@ -34,7 +34,7 @@ var GECD = "ge_create",
     PEAP = "pe_apply",
     PEEU = "pe_update",
     PLAY_EVENT_WIN = "pe_win",
-    PLAY_EVENT_LOST = "pe_lost";
+    PELS = "pe_lost";
 
 var G_STATUS_SETUP = "gs_setup",
   G_STATUS_RUNNING = "gs_running",
