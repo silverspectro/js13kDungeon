@@ -4,36 +4,35 @@
 
 var MAX_CLOCK_TIME = 60 * 30;
 
-var STATE_DEFAULT  = 1,   // 0x 00000001
-    STATE_PLAYER   = 2,   // 0x 00000010
-    STATE_WALL     = 4,   // 0x 00000100
-    STATE_DYNAMITE = 8,   // 0x 00001000
-    STATE_RHUM     = 16,  // 0x 00010000
-    STATE_MONEY    = 32,  // 0x 00100000
-    STATE_BOUM     = 64;  // 0x 01000000
+var STD  = 1,   // 0x 00000001
+    SPL   = 2,   // 0x 00000010
+    SWL     = 4,   // 0x 00000100
+    STDY = 8,   // 0x 00001000
+    STRH     = 16,  // 0x 00010000
+    STMO    = 32,  // 0x 00100000
+    STBM     = 64;  // 0x 01000000
 
-var bonusMapState = [STATE_RHUM, STATE_MONEY];
+var bonusMapState = [STRH, STMO];
 
-var MOVE_UP = "up",
-  MOVE_DOWN = "down",
-  MOVE_RIGHT = "right",
-  MOVE_LEFT = "left";
+var MUP = "up",
+  MDW = "down",
+  MRH = "right",
+  MLT = "left";
 
-var GAME_EVENT_CREATE = "ge_create",
-  GAME_EVENT_CREATED = "ge_created",
-  GAME_EVENT_LIST = "ge_list",
-  GAME_EVENT_LISTED = "ge_listed",
-  GAME_EVENT_JOIN = "ge_join",
-  GAME_EVENT_EDITED = "pe_update", // for now, GAME_EVENT_EDITED === PLAY_EVENT_UPDATE to make ui management easier
-  GAME_EVENT_START = "ge_start",
-  GAME_EVENT_STARTED = "ge_started",
-  GAME_EVENT_FINISHED = "ge_finished",
-  GAME_EVENT_LEAVE = "ge_leave",
-  GAME_EVENT_JOIN = "ge_join";
+var GECD = "ge_create",
+  GECDD = "ge_created",
+  GELD = "ge_list",
+  GELDED = "ge_listed",
+  GEEDT = "pe_update", // for now, GEEDT === PEEU to make ui management easier
+  GESTD = "ge_start",
+  GESTDED = "ge_started",
+  GEFD = "ge_finished",
+  GELV = "ge_leave",
+  GEJN = "ge_join";
 
-  var PLAY_EVENT_MOVE = "pe_move",
-    PLAY_EVENT_APPLY = "pe_apply",
-    PLAY_EVENT_UPDATE = "pe_update",
+  var PEMV = "pe_move",
+    PEAP = "pe_apply",
+    PEEU = "pe_update",
     PLAY_EVENT_WIN = "pe_win",
     PLAY_EVENT_LOST = "pe_lost";
 
@@ -44,7 +43,7 @@ var G_STATUS_SETUP = "gs_setup",
 var D_STATUS_SETUP = "ds_setup",
   D_STATUS_READY = "ds_ready",
   D_STATUS_PLAYING = "ds_playing",
-  D_STATUS_WON = "ds_won",
+  DSW = "ds_won",
   D_STATUS_LOST = "ds_lost";
 
 

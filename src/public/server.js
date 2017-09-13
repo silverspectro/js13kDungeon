@@ -67,7 +67,7 @@ ServerController.prototype = {
   init: function () {
     var self = this;
 
-    this.socket.on(GAME_EVENT_CREATE, function (payload) {
+    this.socket.on(GECD, function (payload) {
       var game = findGameById(self.id);
 
       if (!game) {
@@ -77,14 +77,14 @@ ServerController.prototype = {
         game.addDungeon(dungeon);
         games.push(game);
 
-        self.socket.emit(GAME_EVENT_CREATED, game.toJSON());
+        self.socket.emit(GECDD, game.toJSON());
       } else {
         console.warn("A game already exists for given id.")
       }
     });
 
-    this.socket.on(GAME_EVENT_LIST, function () {
-      self.socket.emit(GAME_EVENT_LISTED, listRooms(G_STATUS_SETUP));
+    this.socket.on(GELD, function () {
+      self.socket.emit(GELDED, listRooms(G_STATUS_SETUP));
     });
 
     this.socket.on("disconnect", function () {
@@ -98,7 +98,7 @@ ServerController.prototype = {
           games.splice(findIndex(games, game.id), 1)
         }
 
-        broadcast(game, GAME_EVENT_EDITED, game.toJSON());
+        broadcast(game, GEEDT, game.toJSON());
 
         game = findGameByDungeonId(self.id);
       }
@@ -109,7 +109,7 @@ ServerController.prototype = {
       console.log("Disconnected: " + self.socket.id);
     });
 
-    this.socket.on(GAME_EVENT_JOIN, function (payload) {
+    this.socket.on(GEJN, function (payload) {
       var refGame = findGameById(payload.gameId);
 
       if (refGame && (refGame.status === G_STATUS_SETUP)) {
@@ -122,7 +122,7 @@ ServerController.prototype = {
         );
 
         if (refGame.addDungeon(dungeon)) {
-          broadcast(refGame, GAME_EVENT_EDITED, refGame.toJSON());
+          broadcast(refGame, GEEDT, refGame.toJSON());
           console.log(self.id + " has joined: " + refGame.id);
         }
 
@@ -131,20 +131,20 @@ ServerController.prototype = {
       }
     });
 
-    this.socket.on(PLAY_EVENT_MOVE, function (direction) {
+    this.socket.on(PEMV, function (direction) {
       var game = findGameByDungeonId(self.id);
       if (game && (game.status === G_STATUS_RUNNING)) {
         var dungeon = find(game.dungeons, self.id);
         if (dungeon) {
           if(dungeon.movePlayer(direction)) {
             dungeon.lastUpdateTime = 0;
-            broadcast(game, PLAY_EVENT_UPDATE, game.toJSON());
+            broadcast(game, PEEU, game.toJSON());
           }
         }
       }
     });
 
-    this.socket.on(PLAY_EVENT_APPLY, function (data) {
+    this.socket.on(PEAP, function (data) {
       var game = findGameByDungeonId(self.id);
 
       if (game && (game.status === G_STATUS_RUNNING)) {
@@ -153,13 +153,13 @@ ServerController.prototype = {
 
         if (dungeon && opponent && opponent.applyState(data.x, data.y, data.state, dungeon)) {
           dungeon.deduceMoney(data.state);
-          broadcast(game, PLAY_EVENT_UPDATE, game.toJSON());
+          broadcast(game, PEEU, game.toJSON());
         }
 
       }
     });
 
-    this.socket.on(GAME_EVENT_START, function (payload) {
+    this.socket.on(GESTD, function (payload) {
       var game = findGameByDungeonId(self.id);
 
       if (game && (game.status === G_STATUS_SETUP)) {
@@ -167,7 +167,7 @@ ServerController.prototype = {
         dungeon.status = D_STATUS_READY;
         dungeon.name = payload.name || ( dungeon.name || self.id );
         var readyPlayers = game.startIfReady();
-        broadcast(game, GAME_EVENT_EDITED, game.toJSON());
+        broadcast(game, GEEDT, game.toJSON());
         if (readyPlayers < game.dungeons.length) broadcast(game, D_STATUS_READY, { dungeon: dungeon, readyPlayers: readyPlayers });
       }
     });
@@ -194,7 +194,7 @@ function Game(socket, name, configTemplate, options) {
   this.status = G_STATUS_SETUP;
   this.time = 0;
   /// @TODO : should be dungeon config
-  this.options = options || [STATE_WALL, STATE_DYNAMITE, ];
+  this.options = options || [SWL, STDY, ];
   this.configTemplate = configTemplate || new Config();
 }
 
@@ -202,7 +202,7 @@ Game.prototype = {
   removeDungeon: function (dungeonId) {
     var dungeonIndex = findIndex(this.dungeons, dungeonId);
     if (dungeonIndex >= 0) {
-      broadcast(this, GAME_EVENT_LEAVE, this.dungeons[dungeonIndex].toJSON());
+      broadcast(this, GELV, this.dungeons[dungeonIndex].toJSON());
       this.dungeons.splice(dungeonIndex, 1);
     }
   },
@@ -213,7 +213,7 @@ Game.prototype = {
       this.socket.join(dungeon.id); // manage rooms
       this.dungeons.push(dungeon);
       setTimeout(function() {
-        broadcast(self, GAME_EVENT_JOIN, dungeon.toJSON());
+        broadcast(self, GEJN, dungeon.toJSON());
       }, 1000);
       return true;
     } else {
@@ -237,8 +237,8 @@ Game.prototype = {
       this.time = 0;
       this.clock = setInterval(this.checkClock.bind(this), 1000);
 
-      broadcast(this, GAME_EVENT_STARTED, this.toJSON());
-      broadcast(this, PLAY_EVENT_UPDATE, this.toJSON());
+      broadcast(this, GESTDED, this.toJSON());
+      broadcast(this, PEEU, this.toJSON());
     }
     return playerReady;
   },
@@ -246,7 +246,7 @@ Game.prototype = {
     var self = this;
     self.status = G_STATUS_FINISHED;
     clearInterval(self.clock);
-    broadcast(self, GAME_EVENT_FINISHED, self.toJSON());
+    broadcast(self, GEFD, self.toJSON());
     setTimeout(function () {
       self.socket.disconnect(false)
     }, 60000); // force disconnect after 1 minute
@@ -264,7 +264,7 @@ Game.prototype = {
       
       if (dungeon.updateStatus() && !dungeon.hasLost) {
         isUpdated = true;
-        if (dungeon.status === D_STATUS_LOST) broadcast(self, PLAY_EVENT_LOST, self.toJSON());
+        if (dungeon.status === D_STATUS_LOST) broadcast(self, PELS, self.toJSON());
         dungeon.hasLost = true;
       }
 
@@ -274,12 +274,12 @@ Game.prototype = {
       }
     });
 
-    if (isUpdated) broadcast(self, PLAY_EVENT_UPDATE, self.toJSON());
+    if (isUpdated) broadcast(self, PEEU, self.toJSON());
 
     if ((activeDungeonCount <= 1)) {
       if (lastActiveDungeon) {
-        lastActiveDungeon.status = D_STATUS_WON;
-        broadcast(self, D_STATUS_WON, self.toJSON());
+        lastActiveDungeon.status = DSW;
+        broadcast(self, DSW, self.toJSON());
       }
       this.stop();
     }
@@ -346,19 +346,19 @@ Dungeon.prototype = {
     var originalState = this.area.getState(x, y);
 
     if(this.id === bullyDungeon.id) {
-      if ( (requestedState & STATE_MONEY) && !(originalState & STATE_WALL) && !(originalState & STATE_PLAYER)
-        || (requestedState & STATE_RHUM) && !(originalState & STATE_WALL) && !(originalState & STATE_PLAYER) ) {
-          this.area.setState(x, y, (originalState & STATE_DYNAMITE) | requestedState);
+      if ( (requestedState & STMO) && !(originalState & SWL) && !(originalState & SPL)
+        || (requestedState & STRH) && !(originalState & SWL) && !(originalState & SPL) ) {
+          this.area.setState(x, y, (originalState & STDY) | requestedState);
           return true;
-      } else if ( (requestedState & STATE_DYNAMITE) && (originalState & STATE_WALL) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
-        this.area.setState(x, y, STATE_DEFAULT | STATE_BOUM);
+      } else if ( (requestedState & STDY) && (originalState & SWL) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
+        this.area.setState(x, y, STD | STBM);
         return true;
       }
     } else {
-      if( (requestedState & STATE_WALL) && !(originalState & (STATE_WALL | STATE_PLAYER)) && (bullyDungeon.money >= this.config.wallCost) ) {
+      if( (requestedState & SWL) && !(originalState & (SWL | SPL)) && (bullyDungeon.money >= this.config.wallCost) ) {
         this.area.setState(x, y, requestedState);
         return true;
-      } else if ( (requestedState & STATE_DYNAMITE) && !(originalState & (STATE_WALL | STATE_DYNAMITE | STATE_PLAYER)) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
+      } else if ( (requestedState & STDY) && !(originalState & (SWL | STDY | SPL)) && (bullyDungeon.money >= this.config.dynamiteCost) ) {
         this.area.setState(x, y, originalState | requestedState);
         return true;
       }
@@ -368,9 +368,9 @@ Dungeon.prototype = {
   },
   // This method should not be called if player doesn't have enough money
   deduceMoney: function (requestedState) {
-    if (requestedState & STATE_WALL) {
+    if (requestedState & SWL) {
       this.money -= this.config.wallCost;
-    } else if (requestedState & STATE_DYNAMITE) {
+    } else if (requestedState & STDY) {
       this.money -= this.config.dynamiteCost;
     }
   },
@@ -385,19 +385,19 @@ Dungeon.prototype = {
     var requestedX = originalX;
 
     switch (direction) {
-      case MOVE_UP:
+      case MUP:
         requestedY--;
         break;
 
-      case MOVE_DOWN:
+      case MDW:
         requestedY++;
         break;
 
-      case MOVE_LEFT:
+      case MLT:
         requestedX--;
         break;
 
-      case MOVE_RIGHT:
+      case MRH:
         requestedX++;
         break;
 
@@ -410,28 +410,28 @@ Dungeon.prototype = {
     requestedY = requestedY % this.area.rows + 1 ? requestedY % this.area.rows : this.area.rows - 1;
 
     var requestedPositionState = this.area.getState(requestedX, requestedY);
-    if(requestedPositionState & STATE_WALL) {
+    if(requestedPositionState & SWL) {
       return false;
     }
 
     // apply basic movement, update cells
-    this.area.setState(originalX, originalY, STATE_DEFAULT);
-    this.area.setState(requestedX, requestedY, STATE_PLAYER);
+    this.area.setState(originalX, originalY, STD);
+    this.area.setState(requestedX, requestedY, SPL);
     this.player.x = requestedX;
     this.player.y = requestedY;
     this.life--;
     this.lastUpdateTime = 0;
 
     // apply specific cell bonus / effect
-    if( requestedPositionState & STATE_RHUM ) {
+    if( requestedPositionState & STRH ) {
       this.life += this.config.rhumBonusValue;
     }
 
-    if( requestedPositionState & STATE_MONEY ) {
+    if( requestedPositionState & STMO ) {
       this.money += this.config.moneyBonusValue;
     }
 
-    if( requestedPositionState & STATE_DYNAMITE ) {
+    if( requestedPositionState & STDY ) {
       this.applyTrap(originalX, originalY, direction);
     }
 
@@ -441,20 +441,20 @@ Dungeon.prototype = {
 
     var oppositeDirection;
     switch (direction) {
-      case MOVE_UP:
-        oppositeDirection = MOVE_DOWN;
+      case MUP:
+        oppositeDirection = MDW;
         break;
 
-      case MOVE_DOWN:
-        oppositeDirection = MOVE_UP;
+      case MDW:
+        oppositeDirection = MUP;
         break;
 
-      case MOVE_LEFT:
-        oppositeDirection = MOVE_RIGHT;
+      case MLT:
+        oppositeDirection = MRH;
         break;
 
-      case MOVE_RIGHT:
-        oppositeDirection = MOVE_LEFT;
+      case MRH:
+        oppositeDirection = MLT;
         break;
 
       default :
@@ -465,7 +465,7 @@ Dungeon.prototype = {
       this.movePlayer(oppositeDirection);
     }
 
-    this.area.setState(x, y, STATE_BOUM);
+    this.area.setState(x, y, STBM);
   },
   createArea: function (columns, rows) {
     this.area.reset(columns, rows);
@@ -480,7 +480,7 @@ Dungeon.prototype = {
       y: playerYPos,
     };
 
-    this.area.setState(playerXPos, playerYPos, STATE_PLAYER);
+    this.area.setState(playerXPos, playerYPos, SPL);
   },
   applyModifier: function (key) {
     return this.config[key] + this.modifiers[key];
@@ -575,7 +575,7 @@ Area.prototype = {
     for(var row = 0; row < this.rows; row++) {
       this.states.push([]);
       for(var column = 0; column < this.columns; column++) {
-        this.states[row].push({state: STATE_DEFAULT});
+        this.states[row].push({state: STD});
       }
     }
   },
