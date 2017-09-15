@@ -2,5 +2,6 @@
 .idea/
 SOURCES/
 build/
+public/
 !src/public
 package-lock.json
