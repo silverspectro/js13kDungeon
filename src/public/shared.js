@@ -19,23 +19,28 @@ var MOVE_UP = "up",
   MOVE_RIGHT = "right",
   MOVE_LEFT = "left";
 
-var GAME_EVENT_CREATE = "ge_create",
-  GAME_EVENT_CREATED = "ge_created",
-  GAME_EVENT_LIST = "ge_list",
-  GAME_EVENT_LISTED = "ge_listed",
-  GAME_EVENT_JOIN = "ge_join",
-  GAME_EVENT_EDITED = "pe_update", // for now, GAME_EVENT_EDITED === PLAY_EVENT_UPDATE to make ui management easier
-  GAME_EVENT_START = "ge_start",
-  GAME_EVENT_STARTED = "ge_started",
-  GAME_EVENT_FINISHED = "ge_finished",
-  GAME_EVENT_LEAVE = "ge_leave",
-  GAME_EVENT_JOIN = "ge_join";
+// REQUEST = client -> server event
+var GAME_REQUEST_CREATE = "gr_create",
+    GAME_REQUEST_LIST = "gr_list",
+    GAME_REQUEST_JOIN = "gr_join",
+    GAME_REQUEST_START = "gr_start";
 
-  var PLAY_EVENT_MOVE = "pe_move",
-    PLAY_EVENT_APPLY = "pe_apply",
-    PLAY_EVENT_UPDATE = "pe_update",
-    PLAY_EVENT_WIN = "pe_win",
-    PLAY_EVENT_LOST = "pe_lost";
+var PLAY_REQUEST_MOVE = "pr_move",
+    PLAY_REQUEST_APPLY = "pr_apply";
+
+// EVENT = server -> client event
+// GAME event main payload is game.toJSON
+var GAME_EVENT_CREATE = "ge_create",
+    GAME_EVENT_LIST = "ge_list",
+    GAME_EVENT_EDIT = "ge_update",
+    GAME_EVENT_START = "ge_start",
+    GAME_EVENT_FINISH = "ge_finish";
+
+// DUNGEON event main payload is dungeon.toJSON
+var DUNGEON_EVENT_JOIN = "de_join",
+    DUNGEON_EVENT_LEAVE = "de_leave",
+    DUNGEON_EVENT_WIN = "de_win",
+    DUNGEON_EVENT_LOST = "de_lost";
 
 var G_STATUS_SETUP = "gs_setup",
   G_STATUS_RUNNING = "gs_running",

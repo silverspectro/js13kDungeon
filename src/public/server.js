@@ -67,9 +67,10 @@ ServerController.prototype = {
   init: function () {
     var self = this;
 
-    this.socket.on(GAME_EVENT_CREATE, function (payload) {
-      var game = findGameById(self.id);
+    this.socket.on(GAME_REQUEST_CREATE, function (payload) {
 
+      var game = findGameById(self.id);
+      
       if (!game) {
         game = new Game(self.socket, payload.name || self.id, new Config(payload) /*, options*/ );
         var dungeon = new Dungeon(self.id, game.configTemplate);
@@ -77,14 +78,14 @@ ServerController.prototype = {
         game.addDungeon(dungeon);
         games.push(game);
 
-        self.socket.emit(GAME_EVENT_CREATED, game.toJSON());
+        self.socket.emit(GAME_EVENT_CREATE, game.toJSON());
       } else {
         console.warn("A game already exists for given id.")
       }
     });
 
-    this.socket.on(GAME_EVENT_LIST, function () {
-      self.socket.emit(GAME_EVENT_LISTED, listRooms(G_STATUS_SETUP));
+    this.socket.on(GAME_REQUEST_LIST, function () {
+      self.socket.emit(GAME_EVENT_LIST, listRooms(G_STATUS_SETUP));
     });
 
     this.socket.on("disconnect", function () {
@@ -96,9 +97,9 @@ ServerController.prototype = {
         // if last dungeon removed, destroy game
         if (game.dungeons.length <= 0) {
           games.splice(findIndex(games, game.id), 1)
+        } else {
+          broadcast(game, GAME_EVENT_EDIT, game.toJSON());
         }
-
-        broadcast(game, GAME_EVENT_EDITED, game.toJSON());
 
         game = findGameByDungeonId(self.id);
       }
@@ -109,7 +110,7 @@ ServerController.prototype = {
       console.log("Disconnected: " + self.socket.id);
     });
 
-    this.socket.on(GAME_EVENT_JOIN, function (payload) {
+    this.socket.on(GAME_REQUEST_JOIN, function (payload) {
       var refGame = findGameById(payload.gameId);
 
       if (refGame && (refGame.status === G_STATUS_SETUP)) {
@@ -122,7 +123,8 @@ ServerController.prototype = {
         );
 
         if (refGame.addDungeon(dungeon)) {
-          broadcast(refGame, GAME_EVENT_EDITED, refGame.toJSON());
+          broadcast(refGame, GAME_EVENT_EDIT, refGame.toJSON());
+          broadcast(self, DUNGEON_EVENT_JOIN, dungeon.toJSON());
           console.log(self.id + " has joined: " + refGame.id);
         }
 
@@ -131,20 +133,20 @@ ServerController.prototype = {
       }
     });
 
-    this.socket.on(PLAY_EVENT_MOVE, function (direction) {
+    this.socket.on(PLAY_REQUEST_MOVE, function (direction) {
       var game = findGameByDungeonId(self.id);
       if (game && (game.status === G_STATUS_RUNNING)) {
         var dungeon = find(game.dungeons, self.id);
         if (dungeon) {
           if(dungeon.movePlayer(direction)) {
             dungeon.lastUpdateTime = 0;
-            broadcast(game, PLAY_EVENT_UPDATE, game.toJSON());
+            broadcast(game, GAME_EVENT_EDIT, game.toJSON());
           }
         }
       }
     });
 
-    this.socket.on(PLAY_EVENT_APPLY, function (data) {
+    this.socket.on(PLAY_REQUEST_APPLY, function (data) {
       var game = findGameByDungeonId(self.id);
 
       if (game && (game.status === G_STATUS_RUNNING)) {
@@ -153,13 +155,13 @@ ServerController.prototype = {
 
         if (dungeon && opponent && opponent.applyState(data.x, data.y, data.state, dungeon)) {
           dungeon.deduceMoney(data.state);
-          broadcast(game, PLAY_EVENT_UPDATE, game.toJSON());
+          broadcast(game, GAME_EVENT_EDIT, game.toJSON());
         }
 
       }
     });
 
-    this.socket.on(GAME_EVENT_START, function (payload) {
+    this.socket.on(GAME_REQUEST_START, function (payload) {
       var game = findGameByDungeonId(self.id);
 
       if (game && (game.status === G_STATUS_SETUP)) {
@@ -167,7 +169,7 @@ ServerController.prototype = {
         dungeon.status = D_STATUS_READY;
         dungeon.name = payload.name || ( dungeon.name || self.id );
         var readyPlayers = game.startIfReady();
-        broadcast(game, GAME_EVENT_EDITED, game.toJSON());
+        broadcast(game, GAME_EVENT_EDIT, game.toJSON());
         if (readyPlayers < game.dungeons.length) broadcast(game, D_STATUS_READY, { dungeon: dungeon, readyPlayers: readyPlayers });
       }
     });
@@ -202,7 +204,7 @@ Game.prototype = {
   removeDungeon: function (dungeonId) {
     var dungeonIndex = findIndex(this.dungeons, dungeonId);
     if (dungeonIndex >= 0) {
-      broadcast(this, GAME_EVENT_LEAVE, this.dungeons[dungeonIndex].toJSON());
+      broadcast(this, DUNGEON_EVENT_LEAVE, this.dungeons[dungeonIndex].toJSON());
       this.dungeons.splice(dungeonIndex, 1);
     }
   },
@@ -212,9 +214,6 @@ Game.prototype = {
     if (!refDungeon) {
       this.socket.join(dungeon.id); // manage rooms
       this.dungeons.push(dungeon);
-      setTimeout(function() {
-        broadcast(self, GAME_EVENT_JOIN, dungeon.toJSON());
-      }, 1000);
       return true;
     } else {
       console.warn(dungeon.id + ' already in game ' + this.id);
@@ -237,8 +236,7 @@ Game.prototype = {
       this.time = 0;
       this.clock = setInterval(this.checkClock.bind(this), 1000);
 
-      broadcast(this, GAME_EVENT_STARTED, this.toJSON());
-      broadcast(this, PLAY_EVENT_UPDATE, this.toJSON());
+      broadcast(this, GAME_REQUEST_START, this.toJSON());
     }
     return playerReady;
   },
@@ -246,10 +244,7 @@ Game.prototype = {
     var self = this;
     self.status = G_STATUS_FINISHED;
     clearInterval(self.clock);
-    broadcast(self, GAME_EVENT_FINISHED, self.toJSON());
-    setTimeout(function () {
-      self.socket.disconnect(false)
-    }, 60000); // force disconnect after 1 minute
+    broadcast(self, GAME_EVENT_FINISH, self.toJSON());
   },
   stopIfFinishedOnClock: function () {
     var self = this;
@@ -264,7 +259,7 @@ Game.prototype = {
       
       if (dungeon.updateStatus() && !dungeon.hasLost) {
         isUpdated = true;
-        if (dungeon.status === D_STATUS_LOST) broadcast(self, PLAY_EVENT_LOST, self.toJSON());
+        if (dungeon.status === D_STATUS_LOST) broadcast(self, DUNGEON_EVENT_LOST, dungeon.toJSON());
         dungeon.hasLost = true;
       }
 
@@ -274,12 +269,12 @@ Game.prototype = {
       }
     });
 
-    if (isUpdated) broadcast(self, PLAY_EVENT_UPDATE, self.toJSON());
+    if (isUpdated) broadcast(self, GAME_EVENT_EDIT, self.toJSON());
 
     if ((activeDungeonCount <= 1)) {
       if (lastActiveDungeon) {
         lastActiveDungeon.status = D_STATUS_WON;
-        broadcast(self, D_STATUS_WON, self.toJSON());
+        broadcast(self, DUNGEON_EVENT_WIN, lastActiveDungeon.toJSON());
       }
       this.stop();
     }

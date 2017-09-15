@@ -311,7 +311,7 @@
       var dungeonId = selectedSquare.getAttribute('data-dungeon-id');
       var x = parseInt(selectedSquare.getAttribute('data-area-x'), 10);
       var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
-      socket.emit(PLAY_EVENT_APPLY, {
+      socket.emit(PLAY_REQUEST_APPLY, {
         opponentId: dungeonId,
         state: controller.selectedOption,
         x: x,
@@ -459,16 +459,17 @@
    */
   function bind() {
 
-    socket.on(GAME_EVENT_LISTED, function (rooms) {
+    socket.on(GAME_EVENT_LIST, function (rooms) {
       updateGamesList(rooms);
     });
 
-    socket.on(GAME_EVENT_CREATED, function (newGame) {
+    socket.on(GAME_EVENT_CREATE, function (newGame) {
       initClientController(newGame);
       updateGameOptions();
+      greetings(newGame);
     });
 
-    socket.on(GAME_EVENT_STARTED, function () {
+    socket.on(GAME_EVENT_START, function () {
       toggle(optionList);
       controller.notify({
         title: 'Game STARTED !',
@@ -476,9 +477,9 @@
       }, TIMEOUT_DURATION);
     });
 
-    socket.on(GAME_EVENT_JOIN, function(d) {
+    socket.on(DUNGEON_EVENT_JOIN, function(d) {
       if (d.id === socket.id) {
-        greetings(d);
+        greetings(controller.game);
       } else {
         controller.notify({
           title: 'new Player joined ' + d.name,
@@ -488,7 +489,7 @@
       }
     });
 
-    socket.on(PLAY_EVENT_LOST, function(dungeon) {
+    socket.on(DUNGEON_EVENT_LOST, function(dungeon) {
       controller.notify({
         title: dungeon.name + ' lost the game !',
         body: 'Alas, another hero falls',
@@ -496,27 +497,20 @@
       });
     });
 
-    socket.on(D_STATUS_WON, function(dungeon) {
+    socket.on(DUNGEON_EVENT_WIN, function(dungeon) {
       controller.notify({
         title: dungeon.name + ' won the game !',
         body: 'All hails the mighty Hero who defeated his foes',
-        duration: 10000,
+        duration: TIMEOUT_DURATION,
       });
     });
 
-    socket.on(GAME_EVENT_LEAVE, function(d) {
+    socket.on(DUNGEON_EVENT_LEAVE, function(d) {
       controller.notify({
         title: d.name + ' left the game',
         body: 'The corridors feel a little bit more peacefull',
         duration: TIMEOUT_DURATION,
       });
-    });
-
-    // update UI anytime game edited or play updated
-    // we have to create controller when joining a game
-    socket.on(GAME_EVENT_EDITED, function (updatedGame) {
-      controller ? controller.updateGame(updatedGame) : initClientController(updatedGame);
-      updateGameOptions();
     });
 
     socket.on(D_STATUS_READY, function(payload) {
@@ -527,10 +521,18 @@
       });
     });
 
+    // update UI anytime game edited or play updated
+    // we have to create controller when joining a game
+    socket.on(GAME_EVENT_EDIT, function (updatedGame) {
+      controller ? controller.updateGame(updatedGame) : initClientController(updatedGame);
+      updateGameOptions();
+    });
+
+
     /// @TODO shouldn't we manage this case ?
     // socket.on("error", function () {});
 
-    socket.on(GAME_EVENT_FINISHED, function (updatedGame) {
+    socket.on(GAME_EVENT_FINISH, function (updatedGame) {
       controller.updateGame(updatedGame);
     });
 
@@ -541,7 +543,7 @@
     buttons.forEach(function (button) {
       on(button, 'click', function () {
         switch (button.id) {
-          case GAME_EVENT_CREATE:
+          case GAME_REQUEST_CREATE:
             socket.emit(button.id, {
               areaColumns: getValueById('ac'),
               areaRows: getValueById('ar'),
@@ -549,19 +551,19 @@
             });
             break;
 
-          case GAME_EVENT_JOIN:
+          case GAME_REQUEST_JOIN:
             socket.emit(button.id, {
               gameId: getValueById('gl'),
             });
             break;
 
-          case GAME_EVENT_START:
+          case GAME_REQUEST_START:
             socket.emit(button.id, {
               name: getValueById('dn'),
             });
             break;
 
-          case GAME_EVENT_LIST:
+          case GAME_REQUEST_LIST:
             socket.emit(button.id, {
               playerId: socket.id,
             });
@@ -605,7 +607,7 @@
           else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
           else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
 
-          if (direction) socket.emit(PLAY_EVENT_MOVE, direction);
+          if (direction) socket.emit(PLAY_REQUEST_MOVE, direction);
           timeout = window.setTimeout(function () {
             controller.keypressed = false;
           }, 100);
@@ -841,7 +843,7 @@
     bind();
 
     // Start with current game list
-    socket.emit(GAME_EVENT_LIST, { playerId: socket.id, });
+    socket.emit(GAME_REQUEST_LIST, { playerId: socket.id, });
 
   }
 
