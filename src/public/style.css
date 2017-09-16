@@ -507,6 +507,7 @@ section .area {
 #a-panels section.ds_lost::after {
   transform: translate(-50%, -50%) scale(1, 1);
 }
+
 #modal {
   position: fixed;
   top: 0%;

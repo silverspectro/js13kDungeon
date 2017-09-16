@@ -345,13 +345,6 @@
     updateUI: function () {
       var self = this;
 
-      // remove dungeons from ui if not in the game anymore
-      self.dungeonsUI.forEach(function (dungeonUi) {
-        if (!find(self.game.dungeons, dungeonUi.id)) {
-          self.deleteDungeonUI(dungeonUi);
-        }
-      });
-
       // for each game dungeon, update ui if exists, create if they don't
       self.game.dungeons.forEach(function (dungeon) {
         var dungeonUI = find(self.dungeonsUI, dungeon.id);
@@ -506,6 +499,9 @@
     });
 
     socket.on(DUNGEON_EVENT_LEAVE, function(d) {
+      var dungeonUI = find(controller.dungeonsUI, d.id);
+      if (dungeonUI) controller.deleteDungeonUI(dungeonUI);
+      
       controller.notify({
         title: d.name + ' left the game',
         body: 'The corridors feel a little bit more peacefull',
