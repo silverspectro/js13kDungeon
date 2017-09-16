@@ -59,12 +59,12 @@
 
     var cssClass = "square";
 
-    if( state & STATE_PLAYER ) { cssClass += " player"; }
-    if( state & STATE_WALL ) { cssClass += " wall"; }
-    if( state & STATE_DYNAMITE ) { cssClass += " dynamite"; }
-    if( state & STATE_MONEY ) { cssClass += " money"; }
-    if( state & STATE_RHUM ) { cssClass += " rhum"; }
-    if( state & STATE_BOUM ) { cssClass += " boum"; }
+    if( state & CS_PLAYER ) { cssClass += " player"; }
+    if( state & CS_WALL ) { cssClass += " wall"; }
+    if( state & CS_DYNAMITE ) { cssClass += " dynamite"; }
+    if( state & CS_MONEY ) { cssClass += " money"; }
+    if( state & CS_RHUM ) { cssClass += " rhum"; }
+    if( state & CS_BOUM ) { cssClass += " boum"; }
     
     return cssClass;
   }
@@ -75,8 +75,8 @@
    * @TODO : review this function interest (used only once)
    */
   function getStateLabel(state) {
-    if( state & STATE_DYNAMITE ) return "Dynamite";
-    if( state & STATE_WALL ) return "Wall";
+    if( state & CS_DYNAMITE ) return "Dynamite";
+    if( state & CS_WALL ) return "Wall";
   }
 
   /**
@@ -225,7 +225,7 @@
     this.id = socket.id;
     this.game;
     this.dungeonsUI = [];
-    this.selectedOption = STATE_WALL;
+    this.selectedOption = CS_WALL;
     this.selectedAdversary;
     this.keypressed = false;
 
@@ -311,7 +311,7 @@
       var dungeonId = selectedSquare.getAttribute('data-dungeon-id');
       var x = parseInt(selectedSquare.getAttribute('data-area-x'), 10);
       var y = parseInt(selectedSquare.getAttribute('data-area-y'), 10);
-      socket.emit(PLAY_REQUEST_APPLY, {
+      socket.emit(PR_APPLY, {
         opponentId: dungeonId,
         state: controller.selectedOption,
         x: x,
@@ -399,14 +399,14 @@
       myPanel.className = selfDungeon.status;
       setupMenu.className = selfDungeon.status;
 
-      if(gameStatus == G_STATUS_SETUP) {
+      if(gameStatus == GS_SETUP) {
         toggle(homeMenu, false);
         toggle(optionList, false);
         
-      } else if(self.game.status == G_STATUS_RUNNING) {
+      } else if(self.game.status == GS_RUNNING) {
         toggle(homeMenu, false);
 
-      } else if(self.game.status == G_STATUS_FINISHED) {
+      } else if(self.game.status == GS_FINISHED) {
         toggle(homeMenu, false);
         toggle(optionList, false);
         
@@ -424,7 +424,6 @@
     mainCtrl = getElementById('main-ctrl'),
     setupMenu = getElementById('m-setup'),
     myPanel = getElementById('m-panel'),
-    adversaryPanels = getElementById('a-panels'),
     gamesSelect = getElementById('gl'),
     optionList = getElementById('option-list'),
     optionListUl = optionList.getElementsByTagName('ul')[0],
@@ -452,17 +451,17 @@
    */
   function bind() {
 
-    socket.on(GAME_EVENT_LIST, function (rooms) {
+    socket.on(GE_LIST, function (rooms) {
       updateGamesList(rooms);
     });
 
-    socket.on(GAME_EVENT_CREATE, function (newGame) {
+    socket.on(GE_CREATE, function (newGame) {
       initClientController(newGame);
       updateGameOptions();
       greetings(newGame);
     });
 
-    socket.on(GAME_EVENT_START, function () {
+    socket.on(GE_START, function () {
       toggle(optionList);
       controller.notify({
         title: 'Game STARTED !',
@@ -470,7 +469,7 @@
       }, TIMEOUT_DURATION);
     });
 
-    socket.on(DUNGEON_EVENT_JOIN, function(d) {
+    socket.on(DE_JOIN, function(d) {
       if (d.id === socket.id) {
         greetings(controller.game);
       } else {
@@ -482,7 +481,7 @@
       }
     });
 
-    socket.on(DUNGEON_EVENT_LOST, function(dungeon) {
+    socket.on(DE_LOST, function(dungeon) {
       controller.notify({
         title: dungeon.name + ' lost the game !',
         body: 'Alas, another hero falls',
@@ -490,7 +489,7 @@
       });
     });
 
-    socket.on(DUNGEON_EVENT_WIN, function(dungeon) {
+    socket.on(DE_WIN, function(dungeon) {
       controller.notify({
         title: dungeon.name + ' won the game !',
         body: 'All hails the mighty Hero who defeated his foes',
@@ -498,7 +497,7 @@
       });
     });
 
-    socket.on(DUNGEON_EVENT_LEAVE, function(d) {
+    socket.on(DE_LEAVE, function(d) {
       var dungeonUI = find(controller.dungeonsUI, d.id);
       if (dungeonUI) controller.deleteDungeonUI(dungeonUI);
       
@@ -509,7 +508,7 @@
       });
     });
 
-    socket.on(D_STATUS_READY, function(payload) {
+    socket.on(DS_READY, function(payload) {
       controller.notify({
         title: payload.dungeon.name + ' ready !',
         body: payload.readyPlayers + '/' + controller.game.dungeons.length + ' players are ready',
@@ -519,7 +518,7 @@
 
     // update UI anytime game edited or play updated
     // we have to create controller when joining a game
-    socket.on(GAME_EVENT_EDIT, function (updatedGame) {
+    socket.on(GE_EDIT, function (updatedGame) {
       controller ? controller.updateGame(updatedGame) : initClientController(updatedGame);
       updateGameOptions();
     });
@@ -528,7 +527,7 @@
     /// @TODO shouldn't we manage this case ?
     // socket.on("error", function () {});
 
-    socket.on(GAME_EVENT_FINISH, function (updatedGame) {
+    socket.on(GE_FINISH, function (updatedGame) {
       controller.updateGame(updatedGame);
     });
 
@@ -539,7 +538,7 @@
     buttons.forEach(function (button) {
       on(button, 'click', function () {
         switch (button.id) {
-          case GAME_REQUEST_CREATE:
+          case GR_CREATE:
             socket.emit(button.id, {
               areaColumns: getValueById('ac'),
               areaRows: getValueById('ar'),
@@ -547,19 +546,19 @@
             });
             break;
 
-          case GAME_REQUEST_JOIN:
+          case GR_JOIN:
             socket.emit(button.id, {
               gameId: getValueById('gl'),
             });
             break;
 
-          case GAME_REQUEST_START:
+          case GR_START:
             socket.emit(button.id, {
               name: getValueById('dn'),
             });
             break;
 
-          case GAME_REQUEST_LIST:
+          case GR_LIST:
             socket.emit(button.id, {
               playerId: socket.id,
             });
@@ -603,7 +602,7 @@
           else if (key === 65 || key === 37) { direction = MOVE_LEFT; }
           else if (key === 68 || key === 39) { direction = MOVE_RIGHT; }
 
-          if (direction) socket.emit(PLAY_REQUEST_MOVE, direction);
+          if (direction) socket.emit(PR_MOVE, direction);
           timeout = window.setTimeout(function () {
             controller.keypressed = false;
           }, 100);
@@ -632,23 +631,25 @@
     // Dom area cells elements mapped in order to make update fast & simple
     this.area = [];
 
+    // attributes commented in order to keep precious bytes
     // Dom elements mapped in order to make update simple
     /// @TODO : associate dom elements by information 'type' (life, money, status, name) 
     //          to make update / create more consistent and simpler 
-    this.dungeonElt;
-    this.nameElt;
-    this.lifeCountElt;
-    this.moneyCountElt;
+    // this.dungeonElt;
+    // this.nameElt;
+    // this.lifeCountElt;
+    // this.moneyCountElt;
 
-    this.dungeonPreviewElt;
-    this.previewDungeonName;
-    this.previewLifeCountElt;
-    this.previewMoneyCountElt;
+    // this.dungeonPreviewElt;
+    // this.previewDungeonName;
+    // this.previewLifeCountElt;
+    // this.previewMoneyCountElt;
 
-    this.statusElt;
-    this.statusNameElt;
-    this.statusLifeCountElt;
-    this.statusMoneyCountElt;
+    // this.statusElt;
+    // this.statusNameElt;
+    // this.statusLifeCountElt;
+    // this.statusMoneyCountElt;
+
 
     // initialize dom elements
     // @TODO make it generic
@@ -839,7 +840,7 @@
     bind();
 
     // Start with current game list
-    socket.emit(GAME_REQUEST_LIST, { playerId: socket.id, });
+    socket.emit(GR_LIST, { playerId: socket.id, });
 
   }
 
